@@ -66,9 +66,9 @@ def show():
     print(content);
     print('Creando el Arreglo de la Red ...')
     # Contiene el diccionario de la clave Items
-    array_data = json_data['items']
+    array_data = content['items']
 
-    ipClient = json_data['IpClient']
+    ipClient = content['IpClient']
     aux = ""
     for ip in ipClient:
         ip_sh = ip[0]
