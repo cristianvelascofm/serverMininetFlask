@@ -61,15 +61,16 @@ def get():
     return 'Este es el Sevidor Mininet'
 
 @app.route('/',methods=['POST'])
-def show():
+def executor():
     content = request.json
-    print(content);
+    print('Datos: ',content);
     json_data = content;
 
     answer_to_client = None 
     charge_array = {}
     traffic_array = {}
     dict_answer = {} #diccionario que se enviará como respuesta al Cliente
+    # Leemos las opciones de operación 
     if 'action' in json_data:
 
         act = json_data['action']
@@ -79,9 +80,8 @@ def show():
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
+            os.system('echo %s|sudo -S %s' % ('123', 'mn-c'))
         return ans
-
-
     elif 'TCP' in json_data:
         #Tipos de Distribucion del Tráfico
         if('global' in json_data):
@@ -505,8 +505,7 @@ def show():
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             for name_server in name_files_server:
                     
-                    archive_json_server = json.loads(open(str(name_server)+'.json').read())
-                    
+                    archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
 
 
@@ -677,7 +676,7 @@ def show():
                 data_gen= {}
                 times = {}
                 procces_data = {}
-            
+            print('Esperando...')
             return traffic
 
         elif('xtreme' in json_data):
@@ -685,10 +684,9 @@ def show():
         elif('specific' in json_data):
             pass
         pass
+    elif 'UDP' in json_data:
+        pass
     else:
-
-
-
         print('Creando el Arreglo de la Red ...')
         # Contiene el diccionario de la clave Items
         array_data = content['items']
