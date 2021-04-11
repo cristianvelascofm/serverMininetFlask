@@ -63,7 +63,7 @@ def get():
 @app.route('/',methods=['POST'])
 def executor():
     content = request.json
-    print('Datos: ',content);
+    print('\n Datos: ',content);
     json_data = content;
 
     answer_to_client = None 
@@ -80,7 +80,7 @@ def executor():
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
-            os.system('echo %s|sudo -S %s' % ('123', 'mn -c'))
+            os.system('echo %s|sudo -S %s' % ('mn', 'mn -c'))
         return ans
     elif 'TCP' in json_data:
         #Tipos de Distribucion del Tráfico
@@ -501,13 +501,15 @@ def executor():
                     archive_json = json.loads(open(str(name)+'.json').read())
                     
                     dict_data_traffic[str(name)] = archive_json
-
+                    os.system('echo %s|sudo -S %s' % ('mn', 'rm -r '+str(name)+'.json'))
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             for name_server in name_files_server:
                     
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
+                    os.system('echo %s|sudo -S %s' % ('mn', 'rm -r '+str(name_server)+'.json'))
 
+            
 
 
 
