@@ -80,7 +80,7 @@ def executor():
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
-            os.system('echo %s|sudo -S %s' % ('123', 'mn-c'))
+            os.system('echo %s|sudo -S %s' % ('123', 'mn -c'))
         return ans
     elif 'TCP' in json_data:
         #Tipos de Distribucion del Tráfico
