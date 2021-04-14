@@ -1,26 +1,21 @@
-from flask import Flask
-from flask_cors import CORS
-from flask import request
-
-
-
-import socket
-import sys
-import os
 import json
+import os
+import socket
 import subprocess
-import time
+import sys
 import threading
+import time
 from threading import Timer
 
-from mininet.topo import Topo
-from mininet.cli import CLI
-from mininet.net import Mininet
-from mininet.node import OVSSwitch, RemoteController
 import mininet.link
 import mininet.log
 import mininet.node
-
+from flask import Flask, request
+from flask_cors import CORS
+from mininet.cli import CLI
+from mininet.net import Mininet
+from mininet.node import OVSSwitch, RemoteController
+from mininet.topo import Topo
 
 # Create a variable for the elements of topology
 host_group = []
@@ -38,10 +33,18 @@ link_dict = {}
 port_container = []
 
 
+linkeados = []
+
 host_added = []
 switch_added = []
 controller_added = []
+aux_array = []
+aux = []
 
+serversEnabled = False
+
+name_files = []
+name_files_server = []
 #Variables para la generacion de trafico ITG
 
 hots_receiver = None
@@ -62,27 +65,44 @@ def get():
 
 @app.route('/',methods=['POST'])
 def executor():
+    global serversEnabled, aux_array, name_files, name_files_server, aux
+    tstart = time.time()
     content = request.json
-    print('\nDatos: ',content);
-    json_data = content;
+    contador = 0
+    
+    json_data = content
 
     answer_to_client = None 
     charge_array = {}
     traffic_array = {}
     dict_answer = {} #diccionario que se enviará como respuesta al Cliente
+    
     # Leemos las opciones de operación 
     if 'action' in json_data:
-
+        print('\nDatos: ',content)
         act = json_data['action']
         if act == "stop":
             print("Terminando Emulacion ...")
+            for n in linkeados:
+                print(n)
+                net.link.delete(n)
             net.stop()
+            os.system('echo %s|sudo -S %s' % ('Okm1234$','sudo mn -c'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f "sudo mnexec"'))
+
+
+                
+
+
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
-            os.system('echo %s|sudo -S %s' % ('mn', 'mn -c'))
+            serversEnabled = False
+            print('Emulación Terminada')
+
         return ans
     elif 'TCP' in json_data:
+
         #Tipos de Distribucion del Tráfico
         if('global' in json_data):
 
@@ -103,8 +123,7 @@ def executor():
             bw = '1k'
             
 
-            name_files = []
-            name_files_server = []
+
             dict_data_traffic = {}
             dict_data_traffic_server = {}
 
@@ -112,22 +131,31 @@ def executor():
             data_traffic={}
             procces_data={}
             data_gen= {}
-
+            
             #Lista de Puertos
             for pt in range(host_size):
                 initial_port = initial_port + 1
                 port_list.append(str(initial_port))
 
 
-            aux_array = []
+            
+            
             #Se colocan los host como servidor en el puerto indicado
+            if(serversEnabled == True):
+                print('Reiniciando el Servicio iperf3...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+               # for serv in aux:
+                #    serv[0].cmd('sudo kill 9 $(sudo lsoft -t -i:'+serv[1]+')')
+
+            print('Estableciendo Servidores...')
             for host_server in host_added:
                 for port in port_list:
                     host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
-                    time.sleep(3)
+                    time.sleep(2)
                     name_files_server.append(str(host_server)+'_'+str(port))
                     aux = [host_server, port]
                     aux_array.append(aux)
+            serversEnabled = True
 
             buffer_server = []
             for server in aux_array:
@@ -140,7 +168,9 @@ def executor():
                                 #Posibles casos de parametrizacion del Trafico en Iperf3.1
                                 #Solo el parámetro de Tiempo 
                                 if('t' in json_data and (not 'i' in json_data) and (not 'l' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
+                                    contador +=1
                                     time_e = str(json_data['t'])
+                                    print('Secuencia ', contador, ' del Generador...')
                                     host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                     temp = str(host_client)+'_'+str(server[0])
                                     ax = str(server)
@@ -493,16 +523,18 @@ def executor():
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                             
         #Tiempo de espera para q se generen por completo los archivos JSON
-            time.sleep(int(time_e) + 5)
+            time.sleep(int(time_e) + 2)
 
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
+            print('Leyendo Resultados de los Clientes...')
             for name in name_files:
                     
                     archive_json = json.loads(open(str(name)+'.json').read())
-                    
                     dict_data_traffic[str(name)] = archive_json
                     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
+            print('Leyendo Resultados de los Servidores...')
             for name_server in name_files_server:
                     
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
@@ -516,6 +548,7 @@ def executor():
             #Diccionario que almacena la respueta para Django
             traffic = {}
             #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
+            print('Generando Salida de los Servidores...')
             for name_server in name_files_server:
                 #print(str(name))
                 connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
@@ -591,9 +624,10 @@ def executor():
                 data_gen= {}
                 times = {}
                 procces_data = {}
-
+            name_files_server = []
 
             #Carga los archivos a un diccionario para la respuesta del servidor a Django
+            print('Generando Salida de los Clientes...')
             for name in name_files:
                 #print(str(name))
                 connected = dict_data_traffic[str(name)]['start']['connected'][0]
@@ -678,7 +712,13 @@ def executor():
                 data_gen= {}
                 times = {}
                 procces_data = {}
-            print('Esperando...')
+            name_files = []
+            
+            tend = time.time()
+            totaltime = tend - tstart
+            print('Tiempo de Ejecucion: ',totaltime)
+            print('Proceso Finalizado...')
+
             return traffic
 
         elif('xtreme' in json_data):
@@ -754,8 +794,8 @@ def executor():
                 if l[0] == m.name:
                     for j in host_added:
                         if l[1] == j.name:
-                            net.addLink(
-                                m, j, intfName1=n['intfName1'], intfName2=n['intfName2'])
+                            linkeados.append(net.addLink(
+                                m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
 
         print('Links Creados ...')
         net.start()
