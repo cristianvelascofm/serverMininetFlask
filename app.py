@@ -63,7 +63,7 @@ def get():
 @app.route('/',methods=['POST'])
 def executor():
     content = request.json
-    print('\n Datos: ',content);
+    print('\nDatos: ',content);
     json_data = content;
 
     answer_to_client = None 
@@ -501,13 +501,13 @@ def executor():
                     archive_json = json.loads(open(str(name)+'.json').read())
                     
                     dict_data_traffic[str(name)] = archive_json
-                    os.system('echo %s|sudo -S %s' % ('mn', 'rm -r '+str(name)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             for name_server in name_files_server:
                     
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
-                    os.system('echo %s|sudo -S %s' % ('mn', 'rm -r '+str(name_server)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
 
             
 
@@ -769,6 +769,6 @@ def executor():
 
 
 if __name__ == '__main__':
-    app.run(debug= True, host='192.168.56.102')
+    app.run(debug= True, host='10.55.6.188')
 
 
