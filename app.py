@@ -529,6 +529,7 @@ def executor():
             archivo = ''
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             while task_incomplete == True:
+                print('Comprobando Archivos')
                 archivo = open(str(last_file)).read()
                 if len(archivo) > 0:
                     json_last_file = json.loads(archivo)
