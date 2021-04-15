@@ -534,6 +534,7 @@ def executor():
                     json_last_file = json.loads(archivo)
                     if "sender_tcp_congestion" in archivo:
                         num_interval = len(json_last_file['intervals'])
+                        print('Ja ', num_interval)
                         task_incomplete = False
                         break
             
