@@ -428,6 +428,7 @@ def executor():
                                     buffer_server.append(ax)
                                     name_files.append(str(host_client)+'_'+str(server[0]))
                                     last_file = str(host_client)+'_'+str(server[0])+'.json'
+                                    
 
                               #Solo el parámetro de Longitud y Ancho de Banda
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('l' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
@@ -522,21 +523,23 @@ def executor():
                                     name_files.append(str(host_client)+'_'+str(server[0]))
     
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+            time.sleep(1)
             task_incomplete = True
             num_interval = 1
+            archivo = ''
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
-            while task_incomplete:
-                print(last_file)
+            while task_incomplete == True:
                 archivo = open(str(last_file)).read()
-                if json.loads(archivo):
+                if len(archivo) > 0:
                     json_last_file = json.loads(archivo)
                     if "sender_tcp_congestion" in archivo:
                         num_interval = len(json_last_file['intervals'])
+                        task_incomplete = False
                         break
             
             #Tiempo de espera para q se generen por completo los archivos JSON
-            if time_e != '0':
-                time.sleep(int(time_e) + 2)
+            #if time_e != '0':
+                #time.sleep(int(time_e) + 2)
 
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
             print('Leyendo Resultados de los Clientes...')
@@ -544,7 +547,7 @@ def executor():
                     
                     archive_json = json.loads(open(str(name)+'.json').read())
                     dict_data_traffic[str(name)] = archive_json
-                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
 
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
@@ -552,7 +555,7 @@ def executor():
                     
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
-                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
 
             
 
@@ -590,9 +593,9 @@ def executor():
                 blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
 
                 rang = 1
-                if time_e != '0' :
+                #if time_e != '0' :
                     #Resultados del Tráfico generado
-                    rang = int(time_e)/int(interval)
+                    #rang = int(time_e)/int(interval)
                 
                 intervals = dict_data_traffic_server[str(name_server)]['intervals']
                 #print(intervals)
