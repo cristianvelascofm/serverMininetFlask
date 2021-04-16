@@ -537,6 +537,7 @@ def executor():
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while count <= name_files_size:
+                print(count)
                 for comprobate in files_proob:
                     if len(comprobate) > 0:
                         json_transform = json.loads(comprobate)
