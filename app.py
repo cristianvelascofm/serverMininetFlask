@@ -527,20 +527,19 @@ def executor():
             task_incomplete = True
             num_interval = 1
             archivo = ''
-            comprobate_file = []
+            
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while task_incomplete == True:
-                
-                for f in name_files: 
-                    archivo = open(str(last_file)).read()
-                    if len(archivo) > 0:
-                        json_last_file = json.loads(archivo)
-                        if "end" in json_last_file:
-                            num_interval = len(json_last_file['intervals'])
-                            print('Ja ', num_interval)
-                            task_incomplete = False
-                            break
+                print(last_file)
+                archivo = open(str(last_file)).read()
+                if len(archivo) > 0:
+                    json_last_file = json.loads(archivo)
+                    if "end" in json_last_file:
+                        num_interval = len(json_last_file['intervals'])
+                        print('Ja ', num_interval)
+                        task_incomplete = False
+                        break
                 
             #Tiempo de espera para q se generen por completo los archivos JSON
             #if time_e != '0':
