@@ -527,18 +527,21 @@ def executor():
             task_incomplete = True
             num_interval = 1
             archivo = ''
+            comprobate_file = []
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
+            print('Comprobando Archivos Generados...')
             while task_incomplete == True:
-                print('Comprobando Archivos')
-                archivo = open(str(last_file)).read()
-                if len(archivo) > 0:
-                    json_last_file = json.loads(archivo)
-                    if "end" in json_last_file:
-                        num_interval = len(json_last_file['intervals'])
-                        print('Ja ', num_interval)
-                        task_incomplete = False
-                        break
-            
+                
+                for f in name_files: 
+                    archivo = open(str(last_file)).read()
+                    if len(archivo) > 0:
+                        json_last_file = json.loads(archivo)
+                        if "end" in json_last_file:
+                            num_interval = len(json_last_file['intervals'])
+                            print('Ja ', num_interval)
+                            task_incomplete = False
+                            break
+                
             #Tiempo de espera para q se generen por completo los archivos JSON
             #if time_e != '0':
                 #time.sleep(int(time_e) + 2)
@@ -546,7 +549,7 @@ def executor():
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
             print('Leyendo Resultados de los Clientes...')
             for name in name_files:
-                    
+                    print(name)
                     archive_json = json.loads(open(str(name)+'.json').read())
                     dict_data_traffic[str(name)] = archive_json
                     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
@@ -554,7 +557,7 @@ def executor():
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
             for name_server in name_files_server:
-                    
+                    print(name_server)
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
                     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
