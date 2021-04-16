@@ -540,7 +540,7 @@ def executor():
                 
                 for nc in name_files:
                     files_proob.append(open(str(nc)+'.json').read())
-
+                print(len(files_proob))
                 for comprobate in files_proob:
                     if len(comprobate) > 0:
                         json_transform = json.loads(comprobate)
