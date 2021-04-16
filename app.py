@@ -548,9 +548,9 @@ def executor():
                             num_interval = len(json_transform['intervals'])
                             count += 1
                         else:
-                            time.sleep(1)
+                            pass
                     else:
-                        time.sleep(1)
+                        pass
                 print(count)
                 files_proob = []
                    
