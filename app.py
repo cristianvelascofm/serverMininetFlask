@@ -547,6 +547,10 @@ def executor():
                         if 'end' in json_transform:
                             num_interval = len(json_transform['intervals'])
                             count += 1
+                        else:
+                            time.sleep(1)
+                    else:
+                        time.sleep(1)
                 print(count)   
                
 
