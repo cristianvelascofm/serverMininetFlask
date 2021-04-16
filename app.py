@@ -544,6 +544,8 @@ def executor():
                             num_interval = len(json_transform['intervals'])
                             count += 1
 
+                if count == name_files_size:
+                    break
 
 
 
