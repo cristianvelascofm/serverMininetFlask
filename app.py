@@ -155,9 +155,11 @@ def executor():
                     name_files_server.append(str(host_server)+'_'+str(port))
                     aux = [host_server, port]
                     aux_array.append(aux)
-            serversEnabled = True
 
+            serversEnabled = True
             buffer_server = []
+
+            print('Escablaciendo Clientes...')
             for server in aux_array:
                 for host_client in host_added:
                     if not (str(host_client)+'_'+str(server[0])) in buffer_server:
@@ -523,6 +525,7 @@ def executor():
                                     name_files.append(str(host_client)+'_'+str(server[0]))
     
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+            
             time.sleep(1)
             task_incomplete = True
             num_interval = 1
@@ -531,13 +534,15 @@ def executor():
             name_files_size = len(name_files)
             count = 0
 
-            for nc in name_files:
-                files_proob.append(open(str(nc)+'.json').read())
+            
                 
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while count <= name_files_size:
                 print(count)
+                for nc in name_files:
+                    files_proob.append(open(str(nc)+'.json').read())
+
                 for comprobate in files_proob:
                     if len(comprobate) > 0:
                         json_transform = json.loads(comprobate)
