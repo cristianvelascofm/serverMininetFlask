@@ -533,9 +533,7 @@ def executor():
             files_proob = []
             name_files_size = len(name_files)
             count = 0
-
-            
-                
+            print('size ', name_files_size)
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while count <= name_files_size:
