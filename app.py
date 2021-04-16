@@ -537,7 +537,7 @@ def executor():
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while count <= name_files_size:
-                print(count)
+                
                 for nc in name_files:
                     files_proob.append(open(str(nc)+'.json').read())
 
@@ -547,10 +547,8 @@ def executor():
                         if 'end' in json_transform:
                             num_interval = len(json_transform['intervals'])
                             count += 1
-
-                if count == name_files_size:
-                    break
-
+                print(count)   
+               
 
 
 
