@@ -534,6 +534,7 @@ def executor():
             name_files_size = len(name_files)
             count = 0
             print('size ', name_files_size)
+
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
             while count < name_files_size:
@@ -544,7 +545,7 @@ def executor():
                 for comprobate in files_proob:
                     if len(comprobate) > 0:
                         json_transform = json.loads(comprobate)
-                        if 'end' in json_transform:
+                        if 'receiver_tcp_congestion' in json_transform['end']:
                             num_interval = len(json_transform['intervals'])
                             count += 1
                         else:
