@@ -551,8 +551,10 @@ def executor():
                             time.sleep(1)
                     else:
                         time.sleep(1)
-                print(count)   
-               
+                print(count)
+                files_proob = []
+                   
+            print('Interval: ',num_interval)
 
 
 
