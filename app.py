@@ -527,21 +527,42 @@ def executor():
             task_incomplete = True
             num_interval = 1
             archivo = ''
-            
+            files_proob = []
+            name_files_size = len(name_files)
+            count = 0
+
+            for nc in name_files:
+                files_proob.append(open(str(nc)+'.json').read())
+                
             #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
             print('Comprobando Archivos Generados...')
-            while task_incomplete == True:
+            while count <= name_files_size:
+                for comprobate in files_proob:
+                    if len(comprobate) > 0:
+                        json_transform = json.loads(comprobate)
+                        if 'end' in json_transform:
+                            num_interval = len(json_transform['intervals'])
+                            count += 1
+
+
+
+
+
+
+            #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
+            # print('Comprobando Archivos Generados...')
+            # while task_incomplete == True:
                 
-                archivo = open(str(last_file)).read()
-                if len(archivo) > 0:
-                    json_last_file = json.loads(archivo)
-                    if "end" in json_last_file:
-                        num_interval = len(json_last_file['intervals'])
-                        print('last ', json_last_file['end'])
-                        task_incomplete = False
-                        break
-                else:
-                    time.sleep(1)
+            #     archivo = open(str(last_file)).read()
+            #     if len(archivo) > 0:
+            #         json_last_file = json.loads(archivo)
+            #         if "end" in json_last_file:
+            #             num_interval = len(json_last_file['intervals'])
+            #             print('last ', json_last_file['end'])
+            #             task_incomplete = False
+            #             break
+            #     else:
+            #         time.sleep(1)
                 
             #Tiempo de espera para q se generen por completo los archivos JSON
             #if time_e != '0':
