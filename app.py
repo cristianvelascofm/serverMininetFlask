@@ -427,13 +427,13 @@ def executor():
                               #Solo el parámetro de Longitud
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
                                     length = str(json_data['n'])
+                                    #Identifica el ultimo elemento para ejecutarlo en primer plano sin el '&'
                                     if host_client == host_added[size_host_added-1] and server[0] == host_added[size_host_added-2]  and server[1] == port_list[size_port -1]:
                                         tinit = time.time()
-                                        print('entre')
-                                        print(host_client,'-',server[0],'-',server[1])
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
                                         tfinale = time.time()
                                         wait_time = tfinale - tinit
+                                    #Ejecuta el tráfico de los Clientes en segundo plano
                                     else:
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                     temp = str(host_client)+'_'+str(server[0])
@@ -539,82 +539,31 @@ def executor():
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
             
             time.sleep(wait_time+3)
-            # task_incomplete = True
+           
             num_interval = 1
             temp = open(str(host_added[size_host_added-1])+'_'+str(host_added[0])+'.json').read()
             tp = json.loads(temp)
             num_interval = len(tp['intervals'])
-            # archivo = ''
-            # files_proob = []
-            # name_files_size = len(name_files)
-            # count = 0
-            # print('size ', name_files_size)
-
-            # #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
-            # print('Comprobando Archivos Generados...')
-            # while count < name_files_size:
-                
-            #     for nc in name_files:
-            #         files_proob.append(open(str(nc)+'.json').read())
-            #     print(len(files_proob))
-            #     for comprobate in files_proob:
-            #         if len(comprobate) > 0:
-            #             json_transform = json.loads(comprobate)
-            #             if 'receiver_tcp_congestion' in json_transform['end']:
-            #                 num_interval = len(json_transform['intervals'])
-            #                 count += 1
-            #             else:
-            #                 pass
-            #         else:
-            #             pass
-            #     print(count)
-            #     files_proob = []
-                   
-            # print('Interval: ',num_interval)
-
-
-
-
-            #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
-            # print('Comprobando Archivos Generados...')
-            # while task_incomplete == True:
-                
-            #     archivo = open(str(last_file)).read()
-            #     if len(archivo) > 0:
-            #         json_last_file = json.loads(archivo)
-            #         if "end" in json_last_file:
-            #             num_interval = len(json_last_file['intervals'])
-            #             print('last ', json_last_file['end'])
-            #             task_incomplete = False
-            #             break
-            #     else:
-            #         time.sleep(1)
-                
-            #Tiempo de espera para q se generen por completo los archivos JSON
-            #if time_e != '0':
-                #time.sleep(int(time_e) + 2)
+   
 
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
             print('Leyendo Resultados de los Clientes...')
             for name in name_files:
-                    print(name)
                     archive_json = json.loads(open(str(name)+'.json').read())
                     dict_data_traffic[str(name)] = archive_json
-                    
-                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
 
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
             for name_server in name_files_server:
-                    print(name_server)
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
-                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
 
             
 
 
-            print('intervals: ', num_interval)
+
             #Diccionario que almacena la respueta para Django
             traffic = {}
             #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
