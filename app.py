@@ -161,6 +161,8 @@ def executor():
 
             print('Escablaciendo Clientes...')
             size_host_added = len(host_added)
+            size_server = len(aux_array)
+            size_port = len(port_list)
             for server in aux_array:
                 for host_client in host_added:
                     if not (str(host_client)+'_'+str(server[0])) in buffer_server:
@@ -425,7 +427,7 @@ def executor():
                               #Solo el parámetro de Longitud
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
                                     length = str(json_data['n'])
-                                    if host_client == host_added[size_host_added-1]:
+                                    if host_client == host_added[size_host_added-1] and server[0] == aux_array[size_server -1][0]  and server[1] == port[size_port -1]:
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
                                     else:
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
@@ -533,7 +535,10 @@ def executor():
             
             time.sleep(1)
             # task_incomplete = True
-            # num_interval = 1
+            num_interval = 1
+            temp = open(str(host_added[size_host_added-1])+'_'+str(host_added[0])+'.json').read()
+            tp = json.loads(temp)
+            num_interval = len(tp['intervals'])
             # archivo = ''
             # files_proob = []
             # name_files_size = len(name_files)
@@ -590,7 +595,8 @@ def executor():
                     print(name)
                     archive_json = json.loads(open(str(name)+'.json').read())
                     dict_data_traffic[str(name)] = archive_json
-                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                    
+                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
 
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
@@ -598,12 +604,12 @@ def executor():
                     print(name_server)
                     archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                     dict_data_traffic_server[str(name_server)] = archive_json_server
-                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
 
             
 
 
-
+            print('intervals: ', num_interval)
             #Diccionario que almacena la respueta para Django
             traffic = {}
             #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
