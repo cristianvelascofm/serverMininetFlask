@@ -160,6 +160,7 @@ def executor():
             buffer_server = []
 
             print('Escablaciendo Clientes...')
+            size_host_added = len(host_added)
             for server in aux_array:
                 for host_client in host_added:
                     if not (str(host_client)+'_'+str(server[0])) in buffer_server:
@@ -183,6 +184,7 @@ def executor():
                                 elif('t' in json_data and ('i' in json_data) and (not 'l' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
                                     time_e = str(json_data['t'])
                                     interval = str(json_data['i'])
+                                    
                                     host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                     temp = str(host_client)+'_'+str(server[0])
                                     ax = str(server)
@@ -423,7 +425,10 @@ def executor():
                               #Solo el parámetro de Longitud
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
                                     length = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    if host_client == host_added[size_host_added-1]:
+                                        host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    else:
+                                        host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                     temp = str(host_client)+'_'+str(server[0])
                                     ax = str(server)
                                     buffer_server.append(temp)
@@ -527,35 +532,35 @@ def executor():
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
             
             time.sleep(1)
-            task_incomplete = True
-            num_interval = 1
-            archivo = ''
-            files_proob = []
-            name_files_size = len(name_files)
-            count = 0
-            print('size ', name_files_size)
+            # task_incomplete = True
+            # num_interval = 1
+            # archivo = ''
+            # files_proob = []
+            # name_files_size = len(name_files)
+            # count = 0
+            # print('size ', name_files_size)
 
-            #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
-            print('Comprobando Archivos Generados...')
-            while count < name_files_size:
+            # #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
+            # print('Comprobando Archivos Generados...')
+            # while count < name_files_size:
                 
-                for nc in name_files:
-                    files_proob.append(open(str(nc)+'.json').read())
-                print(len(files_proob))
-                for comprobate in files_proob:
-                    if len(comprobate) > 0:
-                        json_transform = json.loads(comprobate)
-                        if 'receiver_tcp_congestion' in json_transform['end']:
-                            num_interval = len(json_transform['intervals'])
-                            count += 1
-                        else:
-                            pass
-                    else:
-                        pass
-                print(count)
-                files_proob = []
+            #     for nc in name_files:
+            #         files_proob.append(open(str(nc)+'.json').read())
+            #     print(len(files_proob))
+            #     for comprobate in files_proob:
+            #         if len(comprobate) > 0:
+            #             json_transform = json.loads(comprobate)
+            #             if 'receiver_tcp_congestion' in json_transform['end']:
+            #                 num_interval = len(json_transform['intervals'])
+            #                 count += 1
+            #             else:
+            #                 pass
+            #         else:
+            #             pass
+            #     print(count)
+            #     files_proob = []
                    
-            print('Interval: ',num_interval)
+            # print('Interval: ',num_interval)
 
 
 
