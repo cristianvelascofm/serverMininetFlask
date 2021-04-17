@@ -122,7 +122,7 @@ def executor():
             length = '1m'
             bw = '1k'
             
-
+            wait_time = 1
 
             dict_data_traffic = {}
             dict_data_traffic_server = {}
@@ -428,9 +428,12 @@ def executor():
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
                                     length = str(json_data['n'])
                                     if host_client == host_added[size_host_added-1] and server[0] == host_added[size_host_added-2]  and server[1] == port_list[size_port -1]:
+                                        tinit = time.time()
                                         print('entre')
                                         print(host_client,'-',server[0],'-',server[1])
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                        tfinale = time.time()
+                                        wait_time = tfinale - tinit
                                     else:
                                         host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                     temp = str(host_client)+'_'+str(server[0])
@@ -535,7 +538,7 @@ def executor():
     
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
             
-            time.sleep(1)
+            time.sleep(wait_time+3)
             # task_incomplete = True
             num_interval = 1
             temp = open(str(host_added[size_host_added-1])+'_'+str(host_added[0])+'.json').read()
