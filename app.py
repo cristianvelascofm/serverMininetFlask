@@ -652,8 +652,9 @@ def executor():
                 #print(intervals)
                 times = {}
                 data_speciffic= {}
+                number_of_intervals = len(intervals)
 
-                for t in range(int(num_interval)):
+                for t in range(int(number_of_intervals)):
                     streams = intervals[t]['streams'][0]
                     start = streams['start']
                     end = streams['end']
@@ -730,8 +731,8 @@ def executor():
                 intervals = dict_data_traffic[str(name)]['intervals']
                 times = {}
                 data_speciffic= {}
-
-                for t in range(int(num_interval)):
+                number_of_intervals = len(intervals)
+                for t in range(int(number_of_intervals)):
                     streams = intervals[t]['streams'][0]
                     start = streams['start']
                     end = streams['end']
