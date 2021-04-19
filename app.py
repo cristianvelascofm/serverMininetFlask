@@ -45,6 +45,7 @@ serversEnabled = False
 
 name_files = []
 name_files_server = []
+
 #Variables para la generacion de trafico ITG
 
 hots_receiver = None
@@ -98,6 +99,7 @@ def executor():
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
             serversEnabled = False
+            reset_variables()
             print('Emulación Terminada')
 
         return ans
@@ -828,7 +830,31 @@ def executor():
         at['red'] = 'creada'
         return at
     
-
+def reset_variables():
+    host_group = []
+    swithc_group = []
+    controller_group = []
+    link_group = []
+    port_group = []
+    host_container = []
+    switch_container = []
+    controller_container = []
+    link_container = []
+    link_array = []
+    link_dict = {}
+    port_container = []
+    linkeados = []
+    host_added = []
+    switch_added = []
+    controller_added = []
+    aux_array = []
+    aux = []
+    serversEnabled = False
+    name_files = []
+    name_files_server = []
+    hots_receiver = None
+    host_sender = None
+    net = Mininet(build=False)
 
 
 if __name__ == '__main__':
