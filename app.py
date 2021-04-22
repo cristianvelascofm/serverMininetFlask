@@ -80,21 +80,13 @@ def executor():
     
     # Leemos las opciones de operación 
     if 'action' in json_data:
-        print('\nDatos: ',content)
+        print('\n * Datos: ',content)
         act = json_data['action']
         if act == "stop":
             print("Terminando Emulacion ...")
-            for n in linkeados:
-                print(n)
-                net.link.delete(n)
             net.stop()
             os.system('echo %s|sudo -S %s' % ('Okm1234$','sudo mn -c'))
             os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f "sudo mnexec"'))
-
-
-                
-
-
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
@@ -104,7 +96,7 @@ def executor():
 
         return ans
     elif 'TCP' in json_data:
-        print('\nDatos: ',content)
+        print('\n * Datos: ',content)
         #Tipos de Distribucion del Tráfico
         if('global' in json_data):
 
