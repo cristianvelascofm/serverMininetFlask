@@ -536,6 +536,7 @@ def executor():
 
             count = 0;
             name_files_size = len(name_files)
+            print(name_files_size)
             # temporal_file_list = []
             #Comprobar que los archivos  generados están completos para seguir con la ejecución 
             print('Comprobando Archivos Generados...')
@@ -549,6 +550,7 @@ def executor():
                         json_temporal_file = json.loads(read_file);
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
                             count += 1
+                            print(count)
                         else:
                             pass
                 print(count)
