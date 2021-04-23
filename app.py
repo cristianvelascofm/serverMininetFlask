@@ -549,14 +549,14 @@ def executor():
                     else :
                         json_temporal_file = json.loads(read_file);
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                            print(str(read_file))
+                            print(str(client_file))
                             count += 1
                             print(count)
                         else:
                             pass
-                print(count)
+                print('Ciclo' ,count)
 
-
+            time.sleep(3)
             # time.sleep(wait_time+3)
            
             # num_interval = 1
