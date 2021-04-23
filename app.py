@@ -425,7 +425,7 @@ def executor():
                                     #Identifica el ultimo elemento para ejecutarlo en primer plano sin el '&'
                                     if host_client == host_added[size_host_added-1] and server[0] == host_added[size_host_added-2]  and server[1] == port_list[size_port -1]:
                                         tinit = time.time()
-                                        host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                        host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
                                         tfinale = time.time()
                                         wait_time = tfinale - tinit
                                     #Ejecuta el tráfico de los Clientes en segundo plano
@@ -549,6 +549,7 @@ def executor():
                     else :
                         json_temporal_file = json.loads(read_file);
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                            print(str(read_file))
                             count += 1
                             print(count)
                         else:
