@@ -606,16 +606,17 @@ def executor():
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
             print('Leyendo Resultados de los Clientes...')
             for name in name_files:
-                    archive_json = json.loads(open(str(name)+'.json').read())
-                    dict_data_traffic[str(name)] = archive_json
-                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                print(name)
+                archive_json = json.loads(open(str(name)+'.json').read())
+                dict_data_traffic[str(name)] = archive_json
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
 
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
             for name_server in name_files_server:
-                    archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
-                    dict_data_traffic_server[str(name_server)] = archive_json_server
-                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
+                dict_data_traffic_server[str(name_server)] = archive_json_server
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
 
             
 
