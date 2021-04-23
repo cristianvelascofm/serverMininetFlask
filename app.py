@@ -77,7 +77,8 @@ def executor():
     charge_array = {}
     traffic_array = {}
     dict_answer = {} #diccionario que se enviará como respuesta al Cliente
-    
+    name_files = []
+    name_files_server = []
     # Leemos las opciones de operación 
     if 'action' in json_data:
         print('\n * Datos: ',content)
