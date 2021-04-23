@@ -532,18 +532,15 @@ def executor():
                                     name_files.append(str(host_client)+'_'+str(server[0]))
     
                             #host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-            time.sleep(3);
+            time.sleep(1);
 
             count = 0;
             name_files_size = len(name_files)
             print(name_files_size)
             temporal_file_list = []
+
             #Comprobar que los archivos  generados están completos para seguir con la ejecución 
             print('Comprobando Archivos Generados...')
-
-
-            
-
             while count < name_files_size:
                 for client_file in name_files:
                     read_file = open(str(client_file)+'.json').read()
@@ -559,59 +556,12 @@ def executor():
                                 count += 1
                         else:
                             pass
-                print('Ciclo' ,count)
 
-            time.sleep(3)
-            # time.sleep(wait_time+3)
-           
-            # num_interval = 1
-            # temp = open(str(host_added[size_host_added-1])+'_'+str(host_added[0])+'.json').read()
-            # tp = json.loads(temp)
-            # num_interval = len(tp['intervals'])
-
-
-
-
-
-              
-            # time.sleep(1)
-            # task_incomplete = True
-            # num_interval = 1
-            # archivo = ''
-            # files_proob = []
-            # name_files_size = len(name_files)
-            # count = 0
-            # print('size ', name_files_size)
-
-            # #Comprobar que el ultimo archivo generado esta completo para seguir con la ejecucion 
-            # print('Comprobando Archivos Generados...')
-            # while count < name_files_size:
-                
-            #     for nc in name_files:
-            #         files_proob.append(open(str(nc)+'.json').read())
-            #     print(len(files_proob))
-            #     for comprobate in files_proob:
-            #         if len(comprobate) > 0:
-            #             json_transform = json.loads(comprobate)
-            #             if 'end' in json_transform:
-            #             if 'receiver_tcp_congestion' in json_transform['end']:
-            #                 num_interval = len(json_transform['intervals'])
-            #                 count += 1
-            #             else:
-            #                 pass
-            #         else:
-            #             pass
-            #     print(count)
-            #     files_proob = []
-                   
-            # print('Interval: ',num_interval)
-
-   
-
+            time.sleep(1)
+       
             #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
             print('Leyendo Resultados de los Clientes...')
             for name in name_files:
-                print(name)
                 archive_json = json.loads(open(str(name)+'.json').read())
                 dict_data_traffic[str(name)] = archive_json
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
