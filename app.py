@@ -154,6 +154,7 @@ def executor():
                     aux_array.append(aux)
 
             serversEnabled = True
+            time.sleep(1)
             buffer_server = []
 
             print('Escablaciendo Clientes...')
@@ -588,21 +589,23 @@ def executor():
                         if read_file == '':
                             pass
                         else:
-                            json_temporal_file = json.load(read_file)
+                            json_temporal_file = json.loads(read_file)
                             if 'end' in json_temporal_file :
                                 if str(element) in list_end:
                                     pass
                                 else:
+                                    list_end.append(str(element))
                                     contador_end += 1
                             if 'receiver_tcp_congestion' in json_temporal_file['end']:
                                 if str(element) in list_receiver:
                                     pass
                                 else:
+                                    list_receiver.append(str(element))
                                     contador_receiver += 1
                     # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                     else:
                         reset_traffic(element[0], element[1], element[2],traffic_mode)
-                    
+                print('end: ',contador_end,' rec: ',contador_receiver) 
                 if contador_receiver == name_files_size and contador_end == contador_receiver :
                     traffic_incomplete = False
                     break      
@@ -628,16 +631,18 @@ def executor():
                             if read_f == '':
                                 pass
                             else:
-                                json_temp_f = json.load(read_f)
+                                json_temp_f = json.loads(read_f)
                                 if 'end' in json_temp_f :
                                     if str(item) in list_e:
                                         pass
                                     else:
+                                        list_e.append(str(item))
                                         conta_e += 1
                                 if 'receiver_tcp_congestion' in json_temp_f['end']:
                                     if str(item) in list_rec:
                                         pass
                                     else:
+                                        list_rec.append(str(item))
                                         conta_rec += 1
                         else:
                             reset_traffic(item[0], item[1], item[2])
@@ -976,7 +981,7 @@ def reset_variables():
 
 def reset_traffic(host_client, host_server, port):
     global json_data
-
+    print('Reset_Traffic')
     host_server.cmd('fuser -n tcp '+str(port))
     host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
     time.sleep(1)
