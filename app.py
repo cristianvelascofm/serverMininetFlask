@@ -604,7 +604,7 @@ def executor():
                                     contador_receiver += 1
                     # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                     else:
-                        reset_traffic(element[0], element[1], element[2],traffic_mode)
+                        reset_traffic(element[0], element[1], element[2])
                 print('end: ',contador_end,' rec: ',contador_receiver) 
                 if contador_receiver == name_files_size and contador_end == contador_receiver :
                     traffic_incomplete = False
@@ -622,7 +622,7 @@ def executor():
                                 temporal_file_list.append(ed)
                         
                     for f in temporal_file_list:
-                        reset_traffic(f[0],f[1],f[2],traffic_mode)
+                        reset_traffic(f[0],f[1],f[2])
 
                     for item in temporal_file_list:
                         f_n = r''+str(item[0])+'_'+str(item[1])+'.json'
