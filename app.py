@@ -67,6 +67,7 @@ def get():
 @app.route('/',methods=['POST'])
 def executor():
     global serversEnabled, aux_array, name_files, name_files_server, aux, json_data
+    print(time.localtime())
     tstart = time.time()
     content = request.json
     contador = 0
@@ -660,6 +661,8 @@ def executor():
                         pass
                     else :
                         json_temporal_file = json.loads(read_file);
+
+                        
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
                             if str(client_file) in temporal_file_list:
                                 pass
@@ -694,9 +697,7 @@ def executor():
             #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
             print('Generando Salida de los Servidores...')
             for name_server in name_files_server:
-                #print(str(name))
                 connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
-                #print('tipo: ', type(connected))
 
                 #datos del host que actua como transmisor
                 local_host = connected['local_host']
@@ -721,9 +722,6 @@ def executor():
                 blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
 
                 rang = 1
-                #if time_e != '0' :
-                    #Resultados del Tráfico generado
-                    #rang = int(time_e)/int(interval)
                 
                 intervals = dict_data_traffic_server[str(name_server)]['intervals']
                 #print(intervals)
@@ -982,7 +980,7 @@ def reset_variables():
 def reset_traffic(host_client, host_server, port):
     global json_data
     print('Reset_Traffic')
-    host_server.cmd('fuser -n tcp '+str(port))
+    host_server.cmd('fuser -k -n tcp '+str(port))
     host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
     time.sleep(1)
 
