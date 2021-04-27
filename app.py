@@ -591,16 +591,16 @@ def executor():
                         else:
                             json_temporal_file = json.loads(read_file)
                             if 'end' in json_temporal_file :
-                                if str(element) in list_end:
+                                if element in list_end:
                                     pass
                                 else:
-                                    list_end.append(str(element))
+                                    list_end.append(element)
                                     contador_end += 1
                             if 'receiver_tcp_congestion' in json_temporal_file['end']:
                                 if str(element) in list_receiver:
                                     pass
                                 else:
-                                    list_receiver.append(str(element))
+                                    list_receiver.append(element)
                                     contador_receiver += 1
                     # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                     else:
@@ -633,16 +633,16 @@ def executor():
                             else:
                                 json_temp_f = json.loads(read_f)
                                 if 'end' in json_temp_f :
-                                    if str(item) in list_e:
+                                    if item in list_e:
                                         pass
                                     else:
-                                        list_e.append(str(item))
+                                        list_e.append(item)
                                         conta_e += 1
                                 if 'receiver_tcp_congestion' in json_temp_f['end']:
-                                    if str(item) in list_rec:
+                                    if item in list_rec:
                                         pass
                                     else:
-                                        list_rec.append(str(item))
+                                        list_rec.append(item)
                                         conta_rec += 1
                         else:
                             reset_traffic(item[0], item[1], item[2])
