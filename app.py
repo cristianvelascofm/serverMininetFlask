@@ -67,7 +67,7 @@ def get():
 @app.route('/',methods=['POST'])
 def executor():
     global serversEnabled, aux_array, name_files, name_files_server, aux, json_data
-    print(time.localtime())
+    print('Hora ',time.localtime().tm_hour,':',time.localtime().tm_min,':',time.localtime().tm_sec)
     tstart = time.time()
     content = request.json
     contador = 0
@@ -983,7 +983,7 @@ def reset_traffic(host_client, host_server, port):
     host_server.cmd('fuser -k -n tcp '+str(port))
     host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
     time.sleep(1)
-
+    #Solo el parámetro de Tiempo
     if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
         time_e = str(json_data['t'])
         host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
