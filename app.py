@@ -590,7 +590,10 @@ def executor():
                         if read_file == '':
                             pass
                         else:
-                            json_temporal_file = json.loads(read_file)
+                            try:
+                                json_temporal_file = json.loads(read_file)
+                            except:
+                                pass
                             if 'end' in json_temporal_file :
                                 if element in list_end:
                                     pass
@@ -598,7 +601,7 @@ def executor():
                                     list_end.append(element)
                                     contador_end += 1
                             if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                                if str(element) in list_receiver:
+                                if element in list_receiver:
                                     pass
                                 else:
                                     list_receiver.append(element)
@@ -663,20 +666,27 @@ def executor():
 
             #Comprobar que los archivos  generados están completos para seguir con la ejecución 
             print('Comprobando Archivos Generados...')
-            while count < name_files_size:
-                for client_file in name_files:
-                    read_file = open(str(client_file)+'.json').read()
+            name_files_server_size = len(name_files_server)
+            conta = 0
+            temporal_file_list_server= []
+            while conta < name_files_server_size:
+                for server_file in name_files_server:
+                    
+                    read_file = open(str(server_file)+'.json').read()
                     if read_file == '':
                         pass
                     else :
-                        json_temporal_file = json.loads(read_file);
+                        try:
 
+                            json_temporal_file = json.loads(read_file);
+                        except:
+                            pass
                         
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                            if str(client_file) in temporal_file_list:
+                            if str(server_file) in temporal_file_list_server:
                                 pass
                             else:
-                                temporal_file_list.append(str(client_file))
+                                temporal_file_list_server.append(str(server_file))
                                 count += 1
                         else:
                             pass
