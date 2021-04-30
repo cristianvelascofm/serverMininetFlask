@@ -610,47 +610,56 @@ def executor():
                 if contador_receiver == name_files_size and contador_end == contador_receiver :
                     traffic_incomplete = False
                     break      
-                elif contador_end  == name_files_size and contador_receiver < contador_end:
-                    list_e = []
-                    conta_e = 0
-                    list_rec = []
-                    conta_rec = 0
-                    for ed in list_end:
-                        for rv in list_receiver:
-                            if ed == rv:
-                                pass
-                            else:
-                                temporal_file_list.append(ed)
+                elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
+                    resp = {}
+                    resp['error']: 'Imposible Crear el Tráfico'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print('Tiempo de Ejecucion: ',totaltime)
+                    print('Proceso Finalizado...')
+                    return(resp)
+                    break
+                    
+                    # list_e = []
+                    # conta_e = 0
+                    # list_rec = []
+                    # conta_rec = 0
+                    # for ed in list_end:
+                    #     for rv in list_receiver:
+                    #         if ed == rv:
+                    #             pass
+                    #         else:
+                    #             temporal_file_list.append(ed)
                         
-                    for f in temporal_file_list:
-                        reset_traffic(f[0],f[1],f[2])
+                    # for f in temporal_file_list:
+                    #     reset_traffic(f[0],f[1],f[2])
 
-                    for item in temporal_file_list:
-                        f_n = r''+str(item[0])+'_'+str(item[1])+'.json'
-                        if os.path.exists(f_n):
-                            read_f = open(f_n).read()
-                            if read_f == '':
-                                pass
-                            else:
-                                json_temp_f = json.loads(read_f)
-                                if 'end' in json_temp_f :
-                                    if item in list_e:
-                                        pass
-                                    else:
-                                        list_e.append(item)
-                                        conta_e += 1
-                                if 'receiver_tcp_congestion' in json_temp_f['end']:
-                                    if item in list_rec:
-                                        pass
-                                    else:
-                                        list_rec.append(item)
-                                        conta_rec += 1
-                        else:
-                            reset_traffic(item[0], item[1], item[2])
+                    # for item in temporal_file_list:
+                    #     f_n = r''+str(item[0])+'_'+str(item[1])+'.json'
+                    #     if os.path.exists(f_n):
+                    #         read_f = open(f_n).read()
+                    #         if read_f == '':
+                    #             pass
+                    #         else:
+                    #             json_temp_f = json.loads(read_f)
+                    #             if 'end' in json_temp_f :
+                    #                 if item in list_e:
+                    #                     pass
+                    #                 else:
+                    #                     list_e.append(item)
+                    #                     conta_e += 1
+                    #             if 'receiver_tcp_congestion' in json_temp_f['end']:
+                    #                 if item in list_rec:
+                    #                     pass
+                    #                 else:
+                    #                     list_rec.append(item)
+                    #                     conta_rec += 1
+                    #     else:
+                    #         reset_traffic(item[0], item[1], item[2])
 
-                    if conta_rec == len(temporal_file_list) and conta_e == conta_rec :
-                        traffic_incomplete = False
-                        break      
+                    # if conta_rec == len(temporal_file_list) and conta_e == conta_rec :
+                    #     traffic_incomplete = False
+                    #     break      
 
             #Comprobar que los archivos  generados están completos para seguir con la ejecución 
             print('Comprobando Archivos Generados...')
