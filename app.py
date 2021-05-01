@@ -680,6 +680,7 @@ def executor():
 
                             json_temporal_file = json.loads(read_file);
                         except:
+                            print(server_file)
                             pass
                         
                         if 'receiver_tcp_congestion' in json_temporal_file['end']:
@@ -687,7 +688,7 @@ def executor():
                                 pass
                             else:
                                 temporal_file_list_server.append(str(server_file))
-                                count += 1
+                                conta += 1
                         else:
                             pass
 
@@ -703,6 +704,7 @@ def executor():
             #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
             print('Leyendo Resultados de los Servidores...')
             for name_server in name_files_server:
+                print(str(name_server))
                 archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                 dict_data_traffic_server[str(name_server)] = archive_json_server
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
@@ -716,6 +718,7 @@ def executor():
             #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
             print('Generando Salida de los Servidores...')
             for name_server in name_files_server:
+                print(str(name_server))
                 connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
 
                 #datos del host que actua como transmisor
@@ -794,7 +797,7 @@ def executor():
             #Carga los archivos a un diccionario para la respuesta del servidor a Django
             print('Generando Salida de los Clientes...')
             for name in name_files:
-                #print(str(name))
+                print(str(name))
                 connected = dict_data_traffic[str(name)]['start']['connected'][0]
                 #print('tipo: ', type(connected))
 
