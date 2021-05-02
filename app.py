@@ -33,7 +33,7 @@ link_dict = {}
 port_container = []
 
 tstart = None
-
+initial_port = 5000
 
 linkeados = []
 
@@ -432,12 +432,12 @@ def reset_traffic(host_client, host_server, port):
 
 
 def tcp_all_for_all_traffic_generator():
-    global serversEnabled,name_files,name_files_server,json_data, tstart
+    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
     if('global' in json_data):
         print(' * All for All : TCP')
         host_size= (len(host_added))-1
         port_list =[]
-        initial_port = 5000
+
         #Datos del modo de transmision
         #Solo una de estas tres opciones
         time_e = str('0')
@@ -1177,7 +1177,7 @@ def tcp_all_for_all_traffic_generator():
         pass
         
 def tcp_one_for_all_traffic_generator():
-    global serversEnabled,name_files,name_files_server,json_data, tstart 
+    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port 
     if 'global' in json_data:
         print(' * One for All: TCP')
         host_size= (len(host_added))-1
