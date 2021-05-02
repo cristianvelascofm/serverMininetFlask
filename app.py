@@ -1922,8 +1922,363 @@ def tcp_one_for_all_traffic_generator():
     elif('specific' in json_data):
         pass
    
+def New_tcp_all_for_all_traffic_generator():
+    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
+    if('global' in json_data):
+        print(' * All for All : TCP')
+        host_size= (len(host_added))-1
+        port_list =[]
+
+        #Datos del modo de transmision
+        #Solo una de estas tres opciones
+        time_e = str('0')
+        number = '0k'
+        block = '0k'
+        interval = str(1)
+        window = '500k'
+        length = '1m'
+        bw = '1k'
+        traffic_mode = ''
+        wait_time = 1
+        dict_data_traffic = {}
+        dict_data_traffic_server = {}
+        file_traffic= []
+        data_traffic={}
+        procces_data={}
+        data_gen= {}
+        list_validation = []
+        #Lista de Puertos
+        for pt in range(host_size):
+            initial_port = initial_port + 1
+            port_list.append(str(initial_port))
+
+            #Se colocan los host como servidor en el puerto indicado
+            if(serversEnabled == True):
+                print('Reiniciando el Servicio iperf3...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+               # for serv in aux:
+                #    serv[0].cmd('sudo kill 9 $(sudo lsoft -t -i:'+serv[1]+')')
+
+            print('Estableciendo Servidores...')
+            for host_server in host_added:
+                for port in port_list:
+                    host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
+                    time.sleep(0.5)
+                    name_files_server.append(str(host_server)+'_'+str(port))
+                    aux = [host_server, port]
+                    aux_array.append(aux)
+
+            serversEnabled = True
+            time.sleep(1)
+            buffer_server = []
+
+            print('Escablaciendo Clientes...')
+            size_host_added = len(host_added)
+            size_server = len(aux_array)
+            size_port = len(port_list)
+            for server in aux_array:
+                for host_client in host_added:
+                    if not (str(host_client)+'_'+str(server[0])) in buffer_server:
+                        if not str(server) in buffer_server:
+                            if str(server[0]) == str(host_client):
+                                pass
+                            else:
+                                # Aqui van las combinaciones 21
+                                # Tiempo : t , Intervalo : i, Tamaño bloque: l, Numero Bytes: n, Ancho de Banda: b, Ventana: w,
+                                # t - n, 
+                                #
+                                # Solo Tiempo
+                                if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    pass
+                                # Solo Tiempo e Intervalo
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    pass
+                                
+
+                            
+            time.sleep(1);
+            contador_end = 0
+            contador_receiver = 0
+            count = 0;
+            list_end = []
+            list_receiver = []
+            name_files_size = len(name_files)
+            temporal_file_list = []
+            traffic_incomplete = True
+            
+            print("Generando Tráfico...")
+            while traffic_incomplete:
+                for element in list_validation:
+                    file_name = r''+str(element[0])+'_'+str(element[1])+'.json'
+                    # Si el archivo existe lo lee y revisa si esta completo
+                    if os.path.exists(file_name):
+                        read_file = open(file_name).read()
+                        if read_file == '':
+                            pass
+                        else:
+                            try:
+                                json_temporal_file = json.loads(read_file)
+                            except:
+                                pass
+                            if 'end' in json_temporal_file :
+                                if element in list_end:
+                                    pass
+                                else:
+                                    list_end.append(element)
+                                    contador_end += 1
+                            if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                                if element in list_receiver:
+                                    pass
+                                else:
+                                    list_receiver.append(element)
+                                    contador_receiver += 1
+                    # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
+                    else:
+                        reset_traffic(element[0], element[1], element[2])
+                print('end: ',contador_end,' rec: ',contador_receiver) 
+                if contador_receiver == name_files_size and contador_end == contador_receiver :
+                    traffic_incomplete = False
+                    break      
+                elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
+                    resp = {}
+                    resp['error']: 'Imposible Crear el Tráfico'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print('Tiempo de Ejecucion: ',totaltime)
+                    print('Proceso Finalizado...')
+                    return(resp)
+                    break
+
+            #Comprobar que los archivos  generados están completos para seguir con la ejecución 
+            print('Comprobando Archivos Generados...')
+            name_files_server_size = len(name_files_server)
+            conta = 0
+            temporal_file_list_server= []
+            while conta < name_files_server_size:
+                for server_file in name_files_server:
+                    
+                    read_file = open(str(server_file)+'.json').read()
+                    if read_file == '':
+                        pass
+                    else :
+                        try:
+
+                            json_temporal_file = json.loads(read_file);
+                        except:
+                            print(server_file)
+                            pass
+                        
+                        if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                            if str(server_file) in temporal_file_list_server:
+                                pass
+                            else:
+                                temporal_file_list_server.append(str(server_file))
+                                conta += 1
+                        else:
+                            pass
+
+            time.sleep(1)
+       
+            #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
+            print('Leyendo Resultados de los Clientes...')
+            for name in name_files:
+                archive_json = json.loads(open(str(name)+'.json').read())
+                dict_data_traffic[str(name)] = archive_json
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+
+            #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
+            print('Leyendo Resultados de los Servidores...')
+            for name_server in name_files_server:
+                print(str(name_server))
+                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
+                dict_data_traffic_server[str(name_server)] = archive_json_server
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+
+            
 
 
+
+            #Diccionario que almacena la respueta para Django
+            traffic = {}
+            #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
+            print('Generando Salida de los Servidores...')
+            for name_server in name_files_server:
+                print(str(name_server))
+                connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
+
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
+
+                #datos del host que actua como servidor
+                #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
+                #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
+
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
+
+                #datos del inicio del Test
+                protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
+                duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
+
+                rang = 1
+                
+                intervals = dict_data_traffic_server[str(name_server)]['intervals']
+                #print(intervals)
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
+
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
+
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
+
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
+
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                #data_gen['remote_host'] = remote_host
+                #data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
+                
+                traffic[str(name_server)] = procces_data
+                
+                data_gen= {}
+                times = {}
+                procces_data = {}
+            name_files_server = []
+
+            #Carga los archivos a un diccionario para la respuesta del servidor a Django
+            print('Generando Salida de los Clientes...')
+            for name in name_files:
+                print(str(name))
+                connected = dict_data_traffic[str(name)]['start']['connected'][0]
+                #print('tipo: ', type(connected))
+
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
+
+                #datos del host que actua como servidor
+                remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
+                remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
+
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
+
+                #datos del inicio del Test
+                protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
+                duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                    
+                #Resultados del Tráfico generado
+                rang = int(time_e)/int(interval)
+                intervals = dict_data_traffic[str(name)]['intervals']
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    retransmits = streams['retransmits']
+                    snd_cwnd = streams['snd_cwnd']
+                    rtt = streams['rtt']
+                    rttvar = streams['rttvar']
+                    pmtu = streams['pmtu']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
+
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['retransmits'] = retransmits
+                    data_speciffic['snd_cwnd'] = snd_cwnd
+                    data_speciffic['rtt'] = rtt
+                    data_speciffic['rttvar'] = rttvar
+                    data_speciffic['pmtu'] = pmtu
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
+
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
+
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                data_gen['remote_host'] = remote_host
+                data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
+                
+                traffic[str(name)] = procces_data
+                
+                data_gen= {}
+                times = {}
+                procces_data = {}
+            name_files = []
+            
+            tend = time.time()
+            totaltime = tend - tstart
+            print('Tiempo de Ejecucion: ',totaltime)
+            print('Proceso Finalizado...')
+
+            return traffic
+
+    elif('xtreme' in json_data):
+        pass
+    elif('specific' in json_data):
+        pass
+    
 if __name__ == '__main__':
     app.run(debug= True, host='10.55.6.188')
 
