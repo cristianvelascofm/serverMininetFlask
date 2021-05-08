@@ -1340,7 +1340,7 @@ def tcp_all_for_all_traffic_mode():
         print(' * Generando Salida de los Clientes...')
         try:
             for name in name_files:
-                print(str(name))
+                
                 connected = dict_data_traffic[str(name)]['start']['connected'][0]
                 #print('tipo: ', type(connected))
 
@@ -2191,11 +2191,20 @@ def tcp_one_for_all_traffic_mode():
 
         #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
         print(' * Leyendo Resultados de los Servidores...')
-        for name_server in name_files_server:
-            print(str(name_server))
-            archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
-            dict_data_traffic_server[str(name_server)] = archive_json_server
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+        for name_server in name_files_server:            
+            try:
+                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
+                dict_data_traffic_server[str(name_server)] = archive_json_server
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            except:
+                print(' * File Error: ', name_server)
+                answer = {}
+                answer['Error']: 'Failed to Read Clients'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer) 
 
         #Diccionario que almacena la respueta para Django
         traffic = {}
@@ -2203,7 +2212,6 @@ def tcp_one_for_all_traffic_mode():
         print(' * Generando Salida de los Servidores...')
         try:
             for name_server in name_files_server:
-                print(str(name_server))
                 connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
 
                 #datos del host que actua como transmisor
@@ -2290,7 +2298,7 @@ def tcp_one_for_all_traffic_mode():
         print(' * Generando Salida de los Clientes...')
         try:
             for name in name_files:
-                print(str(name))
+                
                 connected = dict_data_traffic[str(name)]['start']['connected'][0]
                 #print('tipo: ', type(connected))
 
