@@ -54,7 +54,7 @@ hots_receiver = None
 host_sender = None
 
 # Creacion de la red en Mininet
-net = Mininet(build=False)
+net = None
 
 
 app = Flask(__name__)
@@ -77,7 +77,7 @@ def get():
 
 @app.route('/',methods=['POST'])
 def executor():
-    global serversEnabled, aux_array, name_files, name_files_server, aux, json_data, tstart
+    global serversEnabled, aux_array, name_files, name_files_server, aux, json_data, tstart, linkeados, net
     print('\n * Hora ',time.localtime().tm_hour,':',time.localtime().tm_min,':',time.localtime().tm_sec)
     tstart = time.time()
     content = request.json
@@ -91,15 +91,44 @@ def executor():
     dict_answer = {} #diccionario que se enviará como respuesta al Cliente
     name_files = []
     name_files_server = []
+    
     # Leemos las opciones de operación 
     if 'action' in json_data:
         print(' * Datos: ',content)
         act = json_data['action']
+
         if act == "stop":
+
             print(" * Terminando Emulacion ...")
-            net.stop()
-            os.system('echo %s|sudo -S %s' % ('Okm1234$','sudo mn -c'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f "sudo mnexec"'))
+            for lk in linkeados:
+                try:
+                    net.delLink(lk)
+                except:
+                    print(' * Error: ', sys.exc_info()[0])
+                    answer = {}
+                    answer['Error']: 'Failed to Delete Links'
+                    print(' * Proceso Finalizado...')
+                    return(answer)
+            try:
+                net.stop()
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Stop Mininet'
+                tend = time.time()
+                totaltime = tend - tstart
+                print('Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
+
+            # Eliminacion "Manual" de la Red de Mininet
+            os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
@@ -111,89 +140,119 @@ def executor():
     elif 'TCP' in json_data:
         print(' * Datos: ',content)
         if 'all_for_all' in json_data:
-            return tcp_all_for_all_traffic_mode()
+            try:
+                return tcp_all_for_all_traffic_mode()
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Response to Client'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
+
         elif 'one_for_all' in json_data:
-            return tcp_one_for_all_traffic_mode()
+            try:
+                return tcp_one_for_all_traffic_mode()
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Response to Client'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
         #Tipos de Distribucion del Tráfico
     elif 'UDP' in json_data:
         pass
     else:
-        print(' * Creando el Arreglo de la Red ...')
-        # Contiene el diccionario de la clave Items
-        array_data = content['items']
+        if net != None:
+            try:
+                net = Mininet(build=False)
+                print(' * Creando el Arreglo de la Red ...')
+                # Contiene el diccionario de la clave Items
+                array_data = content['items']
 
-        ipClient = content['IpClient']
-        aux = ""
-        for ip in ipClient:
-            ip_sh = ip[0]
-            aux = aux+ip
-        # Establece en el Bash la direccion del cliente  en el DISPPLAY
-        os.environ["DISPLAY"] = aux+':0.0'
-        # w.start()
-        for x in array_data:
-            id = x['id'][0]
-            if id == 'h':
-                host_group.append(x)
-            elif id == 's':
-                swithc_group.append(x)
-            elif id == 'c':
-                controller_group.append(x)
-            elif id == 'l':
-                link_group.append(x)
-            elif id == 'e':
-                port_group.append(x)
-            else:
-                print("None")
+                ipClient = content['IpClient']
+                aux = ""
+                for ip in ipClient:
+                    ip_sh = ip[0]
+                    aux = aux+ip
+                # Establece en el Bash la direccion del cliente  en el DISPPLAY
+                os.environ["DISPLAY"] = aux+':0.0'
+                # w.start()
+                for x in array_data:
+                    id = x['id'][0]
+                    if id == 'h':
+                        host_group.append(x)
+                    elif id == 's':
+                        swithc_group.append(x)
+                    elif id == 'c':
+                        controller_group.append(x)
+                    elif id == 'l':
+                        link_group.append(x)
+                    elif id == 'e':
+                        port_group.append(x)
+                    else:
+                        print("None")
 
-        for x in host_group:
-            host_container.append(x['id'])
-        for y in swithc_group:
-            switch_container.append(y['id'])
-        for z in controller_group:
-            controller_container.append(z['id'])
-        for cn in link_group:
-            link_container.append(cn['connection'])
-            aux = {
-                'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
-            link_array.append(aux)
-        
+                for x in host_group:
+                    host_container.append(x['id'])
+                for y in swithc_group:
+                    switch_container.append(y['id'])
+                for z in controller_group:
+                    controller_container.append(z['id'])
+                for cn in link_group:
+                    link_container.append(cn['connection'])
+                    aux = {
+                        'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
+                    link_array.append(aux)
 
-        
-        print(' * Creacion de la Red ...')
+                print(' * Creacion de la Red ...')
 
+                for b in host_container:
+                    host_added.append(net.addHost(b))
+                print(' * Hosts Creados ...')
 
-        for b in host_container:
-            host_added.append(net.addHost(b))
-        print(' * Hosts Creados ...')
+                for d in switch_container:
+                    switch_added.append(net.addSwitch(d))
+                print(' * Switchs Creados ...')
 
-        for d in switch_container:
-            switch_added.append(net.addSwitch(d))
-        print(' * Switchs Creados ...')
-        for f in controller_container:
-            # controller_added.append(net.addController(
-            #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
-            controller_added.append(net.addController(f))
-        print(' * Controladores Creados ...')
-        for n in link_array:
-            l = n['cn'].split(",")
+                for f in controller_container:
+                    # controller_added.append(net.addController(
+                    #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
+                    controller_added.append(net.addController(f))
+                print(' * Controladores Creados ...')
 
-        for n in link_array:
-            l = n['cn'].split(",")
-            for m in switch_added:
-                if l[0] == m.name:
-                    for j in host_added:
-                        if l[1] == j.name:
-                            linkeados.append(net.addLink(
-                                m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
+                for n in link_array:
+                    l = n['cn'].split(",")
+                    for m in switch_added:
+                        if l[0] == m.name:
+                            for j in host_added:
+                                if l[1] == j.name:
+                                    linkeados.append(net.addLink(
+                                        m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
+                print(' * Links Creados ...')
 
-        print(' * Links Creados ...')
-        net.start()
-        print(' * RED INICIADA!! ...')
+                net.start()
+                print(' * Red Emulada con Exito ...')
 
-        at = {}
-        at['red'] = 'creada'
-        return at
-    
+                at = {}
+                at['red'] = 'creada'
+                return at
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Generate Network'
+                tend = time.time()
+                print(' * Proceso Finalizado...')
+                return(answer)
+        else:
+            answer = {}
+            answer['Error']: 'Mininet is Started'
+            return answer
 def reset_variables():
     host_group = []
     swithc_group = []
@@ -464,19 +523,38 @@ def tcp_all_for_all_traffic_mode():
 
         #Se colocan los host como servidor en el puerto indicado
         if(serversEnabled == True):
-            print(' * Reiniciando el Servicio iperf3...')
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
-            # for serv in aux:
-            #    serv[0].cmd('sudo kill 9 $(sudo lsoft -t -i:'+serv[1]+')')
+            try:
+                print(' * Reiniciando el Servicio iperf3...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Reload Iperf3'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer
+            
 
         print(' * Estableciendo Servidores...')
         for host_server in host_added:
             for port in port_list:
-                host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
-                time.sleep(0.5)
-                name_files_server.append(str(host_server)+'_'+str(port))
-                aux = [host_server, port]
-                aux_array.append(aux)
+                try:
+                    host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
+                    time.sleep(0.5)
+                    name_files_server.append(str(host_server)+'_'+str(port))
+                    aux = [host_server, port]
+                    aux_array.append(aux)
+                except:
+                    print(' * Error: ', sys.exc_info()[0])
+                    answer = {}
+                    answer['Error'] = 'Failed to Create Servers'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
 
         serversEnabled = True
         time.sleep(1)
@@ -486,559 +564,573 @@ def tcp_all_for_all_traffic_mode():
         size_host_added = len(host_added)
         size_server = len(aux_array)
         size_port = len(port_list)
-        for server in aux_array:
-            for host_client in host_added:
-                if not (str(host_client)+'_'+str(server[0])) in buffer_server:
-                    if not str(server) in buffer_server:
-                        if str(server[0]) == str(host_client):
-                            pass
-                        else:
-                            #Posibles casos de parametrizacion del Trafico en Iperf3.1
-                            # Solo Tiempo
-                            if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e Intervalo
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e Ancho de banda
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e tamaño bloque
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo y ventana
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                traffic_mode = 't-w'
-                                time_e = str(json_data['t'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de bnda
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ventana
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                window =  str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                length =  str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                           # Solo Tiempo e intervalo e ancho de banda e ventana
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                length = str(json_data['l'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Ventana
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                             # Solo Intervalo - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ventana
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                window = str(json_data['w'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                length = str(json_data['l'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de banda
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de Banda - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                           # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Tmaño Bloque 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                bw = str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Ventana - Tmaño Bloque 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                length = str(json_data['l'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ventana 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                window = str(json_data['w'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
+        try:
+            for server in aux_array:
+                for host_client in host_added:
+                    if not (str(host_client)+'_'+str(server[0])) in buffer_server:
+                        if not str(server) in buffer_server:
+                            if str(server[0]) == str(host_client):
+                                pass
+                            else:
+                                #Posibles casos de parametrizacion del Trafico en Iperf3.1
+                                # Solo Tiempo
+                                if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+
+                            
+                                # Solo Tiempo e Intervalo
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+
+                                # Solo Tiempo e Ancho de banda
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e tamaño bloque
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo y ventana
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    traffic_mode = 't-w'
+                                    time_e = str(json_data['t'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de bnda
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ventana
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    window =  str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    length =  str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                            # Solo Tiempo e intervalo e ancho de banda e ventana
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Ventana
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ventana
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    window = str(json_data['w'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    length = str(json_data['l'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de banda
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de Banda - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                            # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Tmaño Bloque 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Ventana - Tmaño Bloque 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    length = str(json_data['l'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ventana 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    window = str(json_data['w'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer={}                   
+            answer['Error'] = 'Failed to Create Clients'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return answer
+            
         time.sleep(1);
         contador_end = 0
         contador_receiver = 0
@@ -1077,18 +1169,22 @@ def tcp_all_for_all_traffic_mode():
                 # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                 else:
                     reset_traffic(element[0], element[1], element[2])
+
             print('end: ',contador_end,' rec: ',contador_receiver) 
+            
+            # Si el numero de end es igual an de la clave de end['receiver_tcp_congestion'] el trafico fue exitoso
             if contador_receiver == name_files_size and contador_end == contador_receiver :
                 traffic_incomplete = False
                 break      
             elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
-                resp = {}
-                resp['error']: 'Imposible Crear el Tráfico'
+                print('Error: ', 'Imposible Crear el Trafico')
+                answer = {}
+                answer['Error']: 'Failed to Create Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
                 print('Proceso Finalizado...')
-                return(resp)
+                return(answer)
                 break
         
 
@@ -1107,7 +1203,7 @@ def tcp_all_for_all_traffic_mode():
 
                         json_temporal_file = json.loads(read_file);
                     except:
-                        print(server_file)
+                        print('Non-Existent File: ',server_file)
                         pass
                     
                     if 'receiver_tcp_congestion' in json_temporal_file['end']:
@@ -1124,189 +1220,226 @@ def tcp_all_for_all_traffic_mode():
         #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
         print(' * Leyendo Resultados de los Clientes...')
         for name in name_files:
-            archive_json = json.loads(open(str(name)+'.json').read())
-            dict_data_traffic[str(name)] = archive_json
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
-
+            try: 
+                archive_json = json.loads(open(str(name)+'.json').read())
+                dict_data_traffic[str(name)] = archive_json
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            except:
+                print(' * File Error: ', str(name))
+                answer = {}
+                answer['Error']: 'Failed to Read Client Traffic'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
         #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
         print(' * Leyendo Resultados de los Servidores...')
         for name_server in name_files_server:
-            print(str(name_server))
-            archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
-            dict_data_traffic_server[str(name_server)] = archive_json_server
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            try:
+                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
+                dict_data_traffic_server[str(name_server)] = archive_json_server
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            except:
+                print(' * File Error: ', str(name_server))
+                answer = {}
+                answer['Error']: 'Failed to Read Server Traffic'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
 
         #Diccionario que almacena la respueta para Django
         traffic = {}
         #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
         print(' * Generando Salida de los Servidores...')
-        for name_server in name_files_server:
-            print(str(name_server))
-            connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
+        try:
+            for name_server in name_files_server:
+                connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
 
-            #datos del host que actua como transmisor
-            local_host = connected['local_host']
-            local_port = connected['local_port']
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
 
-            #datos del host que actua como servidor
-            #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
-            #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
+                #datos del host que actua como servidor
+                #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
+                #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
 
-            #datos de los parámetros del tráfico en la red
-            tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
-            sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
-            sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
-            rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
 
-            #datos del inicio del Test
-            protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
-            blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
-            omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
-            duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
-            num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
-            blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
+                #datos del inicio del Test
+                protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
+                duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
 
-            rang = 1
-            
-            intervals = dict_data_traffic_server[str(name_server)]['intervals']
-            #print(intervals)
-            times = {}
-            data_speciffic= {}
-            number_of_intervals = len(intervals)
+                rang = 1
+                
+                intervals = dict_data_traffic_server[str(name_server)]['intervals']
+                #print(intervals)
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
 
-            for t in range(int(number_of_intervals)):
-                streams = intervals[t]['streams'][0]
-                start = streams['start']
-                end = streams['end']
-                n_bytes = streams['bytes']
-                bits_per_second = streams['bits_per_second']
-                omitted = streams['omitted']
-                sender = streams['sender']
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
 
-                data_speciffic['start'] = start
-                data_speciffic['end'] = end
-                data_speciffic['n_bytes'] = n_bytes
-                data_speciffic['bits_per_second'] = bits_per_second
-                data_speciffic['omitted'] = str(omitted)
-                data_speciffic['sender'] = str(sender)
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
 
-                times['t_'+str(t)] = data_speciffic
-                data_speciffic = {}
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
 
-            data_gen['local_host'] = local_host
-            data_gen['local_port'] = local_port
-            #data_gen['remote_host'] = remote_host
-            #data_gen['remote_port'] = remote_port
-            data_gen['tcp_mss_default'] = tcp_mss_default
-            data_gen['sock_bufsize'] = sock_bufsize
-            data_gen['sndbuf_actual'] = sndbuf_actual
-            data_gen['rcvbuf_actual'] = rcvbuf_actual
-            data_gen['protocol'] = protocol
-            data_gen['blksize'] = blksize
-            data_gen['omit'] = omit
-            data_gen['duration'] = duration
-            data_gen['num_bytes'] = num_bytes
-            data_gen['blocks'] = blocks
-            procces_data['speciffic'] = times
-            procces_data['general']= data_gen
-            traffic[str(name_server)] = procces_data
-            data_gen= {}
-            times = {}
-            procces_data = {}
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                #data_gen['remote_host'] = remote_host
+                #data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
+                traffic[str(name_server)] = procces_data
+                data_gen= {}
+                times = {}
+                procces_data = {}
 
-        name_files_server = []
+            name_files_server = []
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error']: 'Failed to Generate Output Server Traffic'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
         #Carga los archivos a un diccionario para la respuesta del servidor a Django
         print(' * Generando Salida de los Clientes...')
-        for name in name_files:
-            print(str(name))
-            connected = dict_data_traffic[str(name)]['start']['connected'][0]
-            #print('tipo: ', type(connected))
+        try:
+            for name in name_files:
+                print(str(name))
+                connected = dict_data_traffic[str(name)]['start']['connected'][0]
+                #print('tipo: ', type(connected))
 
-            #datos del host que actua como transmisor
-            local_host = connected['local_host']
-            local_port = connected['local_port']
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
 
-            #datos del host que actua como servidor
-            remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
-            remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
+                #datos del host que actua como servidor
+                remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
+                remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
 
-            #datos de los parámetros del tráfico en la red
-            tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
-            sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
-            sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
-            rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
 
-            #datos del inicio del Test
-            protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
-            blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
-            omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
-            duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
-            num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
-            blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                #datos del inicio del Test
+                protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
+                duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                    
+                #Resultados del Tráfico generado
+                rang = int(time_e)/int(interval)
+                intervals = dict_data_traffic[str(name)]['intervals']
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    retransmits = streams['retransmits']
+                    snd_cwnd = streams['snd_cwnd']
+                    rtt = streams['rtt']
+                    rttvar = streams['rttvar']
+                    pmtu = streams['pmtu']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
+
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['retransmits'] = retransmits
+                    data_speciffic['snd_cwnd'] = snd_cwnd
+                    data_speciffic['rtt'] = rtt
+                    data_speciffic['rttvar'] = rttvar
+                    data_speciffic['pmtu'] = pmtu
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
+
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
+
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                data_gen['remote_host'] = remote_host
+                data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
                 
-            #Resultados del Tráfico generado
-            rang = int(time_e)/int(interval)
-            intervals = dict_data_traffic[str(name)]['intervals']
-            times = {}
-            data_speciffic= {}
-            number_of_intervals = len(intervals)
-            for t in range(int(number_of_intervals)):
-                streams = intervals[t]['streams'][0]
-                start = streams['start']
-                end = streams['end']
-                n_bytes = streams['bytes']
-                bits_per_second = streams['bits_per_second']
-                retransmits = streams['retransmits']
-                snd_cwnd = streams['snd_cwnd']
-                rtt = streams['rtt']
-                rttvar = streams['rttvar']
-                pmtu = streams['pmtu']
-                omitted = streams['omitted']
-                sender = streams['sender']
-
-                data_speciffic['start'] = start
-                data_speciffic['end'] = end
-                data_speciffic['n_bytes'] = n_bytes
-                data_speciffic['bits_per_second'] = bits_per_second
-                data_speciffic['retransmits'] = retransmits
-                data_speciffic['snd_cwnd'] = snd_cwnd
-                data_speciffic['rtt'] = rtt
-                data_speciffic['rttvar'] = rttvar
-                data_speciffic['pmtu'] = pmtu
-                data_speciffic['omitted'] = str(omitted)
-                data_speciffic['sender'] = str(sender)
-
-                times['t_'+str(t)] = data_speciffic
-                data_speciffic = {}
-
-            data_gen['local_host'] = local_host
-            data_gen['local_port'] = local_port
-            data_gen['remote_host'] = remote_host
-            data_gen['remote_port'] = remote_port
-            data_gen['tcp_mss_default'] = tcp_mss_default
-            data_gen['sock_bufsize'] = sock_bufsize
-            data_gen['sndbuf_actual'] = sndbuf_actual
-            data_gen['rcvbuf_actual'] = rcvbuf_actual
-            data_gen['protocol'] = protocol
-            data_gen['blksize'] = blksize
-            data_gen['omit'] = omit
-            data_gen['duration'] = duration
-            data_gen['num_bytes'] = num_bytes
-            data_gen['blocks'] = blocks
-            procces_data['speciffic'] = times
-            procces_data['general']= data_gen
-            
-            traffic[str(name)] = procces_data
-            
-            data_gen= {}
-            times = {}
-            procces_data = {}
+                traffic[str(name)] = procces_data
+                
+                data_gen= {}
+                times = {}
+                procces_data = {}
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error']: 'Failed to Generate Output Server Traffic'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
 
         name_files = []
         tend = time.time()
         totaltime = tend - tstart
-        print('Tiempo de Ejecucion: ',totaltime)
-        print('Proceso Finalizado...')
+        print(' * Tiempo de Ejecucion: ',totaltime)
+        print(' * Proceso Finalizado...')
         return traffic
 
     elif('specific' in json_data):
@@ -1349,19 +1482,37 @@ def tcp_one_for_all_traffic_mode():
 
         #Se colocan los host como servidor en el puerto indicado
         if(serversEnabled == True):
-            print(' * Reiniciando el Servicio iperf3...')
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
-            # for serv in aux:
-            #    serv[0].cmd('sudo kill 9 $(sudo lsoft -t -i:'+serv[1]+')')
-
+            try:
+                print(' * Reiniciando el Servicio iperf3...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+            except:
+                print(' * Error:', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Reload Iperf'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
+           
         print(' * Estableciendo Servidores...')
         for host_server in host_added:
             for port in port_list:
-                host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
-                time.sleep(0.5)
-                name_files_server.append(str(host_server)+'_'+str(port))
-                aux = [host_server, port]
-                aux_array.append(aux)
+                try:
+                    host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
+                    time.sleep(0.5)
+                    name_files_server.append(str(host_server)+'_'+str(port))
+                    aux = [host_server, port]
+                    aux_array.append(aux)
+                except:
+                    print('Error: ', sys.exc_info()[0])
+                    answer = {}
+                    answer['Error']: 'Failed to Create Servers'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print('Tiempo de Ejecucion: ',totaltime)
+                    print('Proceso Finalizado...')
+                    return(answer)
 
         serversEnabled = True
         time.sleep(1)
@@ -1371,559 +1522,571 @@ def tcp_one_for_all_traffic_mode():
         size_host_added = len(host_added)
         size_server = len(aux_array)
         size_port = len(port_list)
-        for server in aux_array:
-            for host_client in host_added:
-                if not (str(host_client)+'_'+str(server[0])) in buffer_server:
-                    if not str(server) in buffer_server:
-                        if str(server[0]) == str(host_client):
-                            pass
-                        else:
-                            #Posibles casos de parametrizacion del Trafico en Iperf3.1
-                            # Solo Tiempo
-                            if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e Intervalo
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e Ancho de banda
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e tamaño bloque
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo y ventana
-                            elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                traffic_mode = 't-w'
-                                time_e = str(json_data['t'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de bnda
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ventana
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                window =  str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                length =  str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                           # Solo Tiempo e intervalo e ancho de banda e ventana
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
-                            elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                time_e = str(json_data['t'])
-                                interval = str(json_data['i'])
-                                bw =  str(json_data['b'])
-                                length = str(json_data['l'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Ventana
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                             # Solo Intervalo - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ventana
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                window = str(json_data['w'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                length = str(json_data['l'])
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                interval = str(json_data['i'])
-                                bw = str(json_data['b'])
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de banda
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de Banda - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                           # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                number = str(json_data['n'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                bw = str(json_data['b'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Ventana
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Tmaño Bloque 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                bw = str(json_data['b'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ancho de Banda - Ventana - Tmaño Bloque 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                length = str(json_data['l'])
-                                bw = str(json_data['b'])
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ventana 
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                window = str(json_data['w'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Solo Ventana - Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                window = str(json_data['w'])
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
-                            # Tamaño Bloque
-                            elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                length = str(json_data['l'])
-                                host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                temp = str(host_client)+'_'+str(server[0])
-                                ax = str(server)
-                                buffer_server.append(temp)
-                                buffer_server.append(ax)
-                                name_files.append(str(host_client)+'_'+str(server[0]))
-                                element_to_validate = []
-                                element_to_validate.append(host_client)
-                                element_to_validate.append(server[0])
-                                element_to_validate.append(server[1])
-                                list_validation.append(element_to_validate)
+        try:
+            for server in aux_array:
+                for host_client in host_added:
+                    if not (str(host_client)+'_'+str(server[0])) in buffer_server:
+                        if not str(server) in buffer_server:
+                            if str(server[0]) == str(host_client):
+                                pass
+                            else:
+                                #Posibles casos de parametrizacion del Trafico en Iperf3.1
+                                # Solo Tiempo
+                                if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e Intervalo
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e Ancho de banda
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e tamaño bloque
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo y ventana
+                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    traffic_mode = 't-w'
+                                    time_e = str(json_data['t'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de bnda
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ventana
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    window =  str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    length =  str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                            # Solo Tiempo e intervalo e ancho de banda e ventana
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
+                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    time_e = str(json_data['t'])
+                                    interval = str(json_data['i'])
+                                    bw =  str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Ventana
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ventana
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    window = str(json_data['w'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    length = str(json_data['l'])
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    interval = str(json_data['i'])
+                                    bw = str(json_data['b'])
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de banda
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de Banda - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                            # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    number = str(json_data['n'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Ventana
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Tmaño Bloque 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    bw = str(json_data['b'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ancho de Banda - Ventana - Tmaño Bloque 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    length = str(json_data['l'])
+                                    bw = str(json_data['b'])
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ventana 
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
+                                    window = str(json_data['w'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Solo Ventana - Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
+                                    window = str(json_data['w'])
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+                                # Tamaño Bloque
+                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
+                                    length = str(json_data['l'])
+                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
+                                    temp = str(host_client)+'_'+str(server[0])
+                                    ax = str(server)
+                                    buffer_server.append(temp)
+                                    buffer_server.append(ax)
+                                    name_files.append(str(host_client)+'_'+str(server[0]))
+                                    element_to_validate = []
+                                    element_to_validate.append(host_client)
+                                    element_to_validate.append(server[0])
+                                    element_to_validate.append(server[1])
+                                    list_validation.append(element_to_validate)
+
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error']: 'Failed to Create Clients'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print( * 'Proceso Finalizado...')
+            return(answer)
+
         time.sleep(1);
         contador_end = 0
         contador_receiver = 0
@@ -1962,18 +2125,20 @@ def tcp_one_for_all_traffic_mode():
                 # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                 else:
                     reset_traffic(element[0], element[1], element[2])
-            print('end: ',contador_end,' rec: ',contador_receiver) 
+             
             if contador_receiver == name_files_size and contador_end == contador_receiver :
+                print('end: ',contador_end,' rec: ',contador_receiver)
                 traffic_incomplete = False
                 break      
             elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
-                resp = {}
-                resp['error']: 'Imposible Crear el Tráfico'
+                print(' * Error: Imposible Crear Tráfico')
+                answer = {}
+                answer['Error']: 'Failed to Create Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
                 print('Proceso Finalizado...')
-                return(resp)
+                return(answer)
                 break
         
 
@@ -1984,7 +2149,10 @@ def tcp_one_for_all_traffic_mode():
         temporal_file_list_server= []
         while conta < name_files_server_size:
             for server_file in name_files_server:
-                read_file = open(str(server_file)+'.json').read()
+                try:
+                    read_file = open(str(server_file)+'.json').read()
+                except:
+                    pass
                 if read_file == '':
                     pass
                 else :
@@ -2009,9 +2177,19 @@ def tcp_one_for_all_traffic_mode():
         #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
         print(' * Leyendo Resultados de los Clientes...')
         for name in name_files:
-            archive_json = json.loads(open(str(name)+'.json').read())
-            dict_data_traffic[str(name)] = archive_json
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            try:
+                archive_json = json.loads(open(str(name)+'.json').read())
+                dict_data_traffic[str(name)] = archive_json
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            except:
+                print(' * File Error: ', name)
+                answer = {}
+                answer['Error']: 'Failed to Read Clients'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
 
         #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
         print(' * Leyendo Resultados de los Servidores...')
@@ -2025,174 +2203,195 @@ def tcp_one_for_all_traffic_mode():
         traffic = {}
         #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
         print(' * Generando Salida de los Servidores...')
-        for name_server in name_files_server:
-            print(str(name_server))
-            connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
+        try:
+            for name_server in name_files_server:
+                print(str(name_server))
+                connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
 
-            #datos del host que actua como transmisor
-            local_host = connected['local_host']
-            local_port = connected['local_port']
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
 
-            #datos del host que actua como servidor
-            #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
-            #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
+                #datos del host que actua como servidor
+                #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
+                #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
 
-            #datos de los parámetros del tráfico en la red
-            tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
-            sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
-            sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
-            rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
 
-            #datos del inicio del Test
-            protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
-            blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
-            omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
-            duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
-            num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
-            blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
+                #datos del inicio del Test
+                protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
+                duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
 
-            rang = 1
-            
-            intervals = dict_data_traffic_server[str(name_server)]['intervals']
-            #print(intervals)
-            times = {}
-            data_speciffic= {}
-            number_of_intervals = len(intervals)
+                rang = 1
+                
+                intervals = dict_data_traffic_server[str(name_server)]['intervals']
+                #print(intervals)
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
 
-            for t in range(int(number_of_intervals)):
-                streams = intervals[t]['streams'][0]
-                start = streams['start']
-                end = streams['end']
-                n_bytes = streams['bytes']
-                bits_per_second = streams['bits_per_second']
-                omitted = streams['omitted']
-                sender = streams['sender']
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
 
-                data_speciffic['start'] = start
-                data_speciffic['end'] = end
-                data_speciffic['n_bytes'] = n_bytes
-                data_speciffic['bits_per_second'] = bits_per_second
-                data_speciffic['omitted'] = str(omitted)
-                data_speciffic['sender'] = str(sender)
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
 
-                times['t_'+str(t)] = data_speciffic
-                data_speciffic = {}
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
 
-            data_gen['local_host'] = local_host
-            data_gen['local_port'] = local_port
-            #data_gen['remote_host'] = remote_host
-            #data_gen['remote_port'] = remote_port
-            data_gen['tcp_mss_default'] = tcp_mss_default
-            data_gen['sock_bufsize'] = sock_bufsize
-            data_gen['sndbuf_actual'] = sndbuf_actual
-            data_gen['rcvbuf_actual'] = rcvbuf_actual
-            data_gen['protocol'] = protocol
-            data_gen['blksize'] = blksize
-            data_gen['omit'] = omit
-            data_gen['duration'] = duration
-            data_gen['num_bytes'] = num_bytes
-            data_gen['blocks'] = blocks
-            procces_data['speciffic'] = times
-            procces_data['general']= data_gen
-            traffic[str(name_server)] = procces_data
-            data_gen= {}
-            times = {}
-            procces_data = {}
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                #data_gen['remote_host'] = remote_host
+                #data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
+                traffic[str(name_server)] = procces_data
+                data_gen= {}
+                times = {}
+                procces_data = {}
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error']: 'Failed to Genereate Output Server'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
 
         name_files_server = []
         #Carga los archivos a un diccionario para la respuesta del servidor a Django
         print(' * Generando Salida de los Clientes...')
-        for name in name_files:
-            print(str(name))
-            connected = dict_data_traffic[str(name)]['start']['connected'][0]
-            #print('tipo: ', type(connected))
+        try:
+            for name in name_files:
+                print(str(name))
+                connected = dict_data_traffic[str(name)]['start']['connected'][0]
+                #print('tipo: ', type(connected))
 
-            #datos del host que actua como transmisor
-            local_host = connected['local_host']
-            local_port = connected['local_port']
+                #datos del host que actua como transmisor
+                local_host = connected['local_host']
+                local_port = connected['local_port']
 
-            #datos del host que actua como servidor
-            remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
-            remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
+                #datos del host que actua como servidor
+                remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
+                remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
 
-            #datos de los parámetros del tráfico en la red
-            tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
-            sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
-            sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
-            rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
+                #datos de los parámetros del tráfico en la red
+                tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
+                sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
+                sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
+                rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
 
-            #datos del inicio del Test
-            protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
-            blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
-            omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
-            duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
-            num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
-            blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                #datos del inicio del Test
+                protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
+                blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
+                omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
+                duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
+                num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
+                blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                    
+                #Resultados del Tráfico generado
+                rang = int(time_e)/int(interval)
+                intervals = dict_data_traffic[str(name)]['intervals']
+                times = {}
+                data_speciffic= {}
+                number_of_intervals = len(intervals)
+                for t in range(int(number_of_intervals)):
+                    streams = intervals[t]['streams'][0]
+                    start = streams['start']
+                    end = streams['end']
+                    n_bytes = streams['bytes']
+                    bits_per_second = streams['bits_per_second']
+                    retransmits = streams['retransmits']
+                    snd_cwnd = streams['snd_cwnd']
+                    rtt = streams['rtt']
+                    rttvar = streams['rttvar']
+                    pmtu = streams['pmtu']
+                    omitted = streams['omitted']
+                    sender = streams['sender']
+
+                    data_speciffic['start'] = start
+                    data_speciffic['end'] = end
+                    data_speciffic['n_bytes'] = n_bytes
+                    data_speciffic['bits_per_second'] = bits_per_second
+                    data_speciffic['retransmits'] = retransmits
+                    data_speciffic['snd_cwnd'] = snd_cwnd
+                    data_speciffic['rtt'] = rtt
+                    data_speciffic['rttvar'] = rttvar
+                    data_speciffic['pmtu'] = pmtu
+                    data_speciffic['omitted'] = str(omitted)
+                    data_speciffic['sender'] = str(sender)
+
+                    times['t_'+str(t)] = data_speciffic
+                    data_speciffic = {}
+
+                data_gen['local_host'] = local_host
+                data_gen['local_port'] = local_port
+                data_gen['remote_host'] = remote_host
+                data_gen['remote_port'] = remote_port
+                data_gen['tcp_mss_default'] = tcp_mss_default
+                data_gen['sock_bufsize'] = sock_bufsize
+                data_gen['sndbuf_actual'] = sndbuf_actual
+                data_gen['rcvbuf_actual'] = rcvbuf_actual
+                data_gen['protocol'] = protocol
+                data_gen['blksize'] = blksize
+                data_gen['omit'] = omit
+                data_gen['duration'] = duration
+                data_gen['num_bytes'] = num_bytes
+                data_gen['blocks'] = blocks
+                procces_data['speciffic'] = times
+                procces_data['general']= data_gen
                 
-            #Resultados del Tráfico generado
-            rang = int(time_e)/int(interval)
-            intervals = dict_data_traffic[str(name)]['intervals']
-            times = {}
-            data_speciffic= {}
-            number_of_intervals = len(intervals)
-            for t in range(int(number_of_intervals)):
-                streams = intervals[t]['streams'][0]
-                start = streams['start']
-                end = streams['end']
-                n_bytes = streams['bytes']
-                bits_per_second = streams['bits_per_second']
-                retransmits = streams['retransmits']
-                snd_cwnd = streams['snd_cwnd']
-                rtt = streams['rtt']
-                rttvar = streams['rttvar']
-                pmtu = streams['pmtu']
-                omitted = streams['omitted']
-                sender = streams['sender']
-
-                data_speciffic['start'] = start
-                data_speciffic['end'] = end
-                data_speciffic['n_bytes'] = n_bytes
-                data_speciffic['bits_per_second'] = bits_per_second
-                data_speciffic['retransmits'] = retransmits
-                data_speciffic['snd_cwnd'] = snd_cwnd
-                data_speciffic['rtt'] = rtt
-                data_speciffic['rttvar'] = rttvar
-                data_speciffic['pmtu'] = pmtu
-                data_speciffic['omitted'] = str(omitted)
-                data_speciffic['sender'] = str(sender)
-
-                times['t_'+str(t)] = data_speciffic
-                data_speciffic = {}
-
-            data_gen['local_host'] = local_host
-            data_gen['local_port'] = local_port
-            data_gen['remote_host'] = remote_host
-            data_gen['remote_port'] = remote_port
-            data_gen['tcp_mss_default'] = tcp_mss_default
-            data_gen['sock_bufsize'] = sock_bufsize
-            data_gen['sndbuf_actual'] = sndbuf_actual
-            data_gen['rcvbuf_actual'] = rcvbuf_actual
-            data_gen['protocol'] = protocol
-            data_gen['blksize'] = blksize
-            data_gen['omit'] = omit
-            data_gen['duration'] = duration
-            data_gen['num_bytes'] = num_bytes
-            data_gen['blocks'] = blocks
-            procces_data['speciffic'] = times
-            procces_data['general']= data_gen
-            
-            traffic[str(name)] = procces_data
-            
-            data_gen= {}
-            times = {}
-            procces_data = {}
+                traffic[str(name)] = procces_data
+                
+                data_gen= {}
+                times = {}
+                procces_data = {}
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error']: 'Failed to Generate Output Client'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
 
         name_files = []
         tend = time.time()
         totaltime = tend - tstart
-        print('Tiempo de Ejecucion: ',totaltime)
-        print('Proceso Finalizado...')
+        print(' * Tiempo de Ejecucion: ',totaltime)
+        print(' * Proceso Finalizado...')
         return traffic
+        
 
     elif('specific' in json_data):
         pass
