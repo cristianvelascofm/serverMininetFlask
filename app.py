@@ -54,7 +54,7 @@ hots_receiver = None
 host_sender = None
 
 # Creacion de la red en Mininet
-net = None
+net = Mininet(build=False)
 
 
 app = Flask(__name__)
@@ -168,91 +168,87 @@ def executor():
     elif 'UDP' in json_data:
         pass
     else:
-        if net != None:
-            try:
-                net = Mininet(build=False)
-                print(' * Creando el Arreglo de la Red ...')
-                # Contiene el diccionario de la clave Items
-                array_data = content['items']
+        
+        try:
+            print(' * Creando el Arreglo de la Red ...')
+            # Contiene el diccionario de la clave Items
+            array_data = content['items']
 
-                ipClient = content['IpClient']
-                aux = ""
-                for ip in ipClient:
-                    ip_sh = ip[0]
-                    aux = aux+ip
-                # Establece en el Bash la direccion del cliente  en el DISPPLAY
-                os.environ["DISPLAY"] = aux+':0.0'
-                # w.start()
-                for x in array_data:
-                    id = x['id'][0]
-                    if id == 'h':
-                        host_group.append(x)
-                    elif id == 's':
-                        swithc_group.append(x)
-                    elif id == 'c':
-                        controller_group.append(x)
-                    elif id == 'l':
-                        link_group.append(x)
-                    elif id == 'e':
-                        port_group.append(x)
-                    else:
-                        print("None")
+            ipClient = content['IpClient']
+            aux = ""
+            for ip in ipClient:
+                ip_sh = ip[0]
+                aux = aux+ip
+            # Establece en el Bash la direccion del cliente  en el DISPPLAY
+            os.environ["DISPLAY"] = aux+':0.0'
+            # w.start()
+            for x in array_data:
+                id = x['id'][0]
+                if id == 'h':
+                    host_group.append(x)
+                elif id == 's':
+                    swithc_group.append(x)
+                elif id == 'c':
+                    controller_group.append(x)
+                elif id == 'l':
+                    link_group.append(x)
+                elif id == 'e':
+                    port_group.append(x)
+                else:
+                    print("None")
 
-                for x in host_group:
-                    host_container.append(x['id'])
-                for y in swithc_group:
-                    switch_container.append(y['id'])
-                for z in controller_group:
-                    controller_container.append(z['id'])
-                for cn in link_group:
-                    link_container.append(cn['connection'])
-                    aux = {
-                        'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
-                    link_array.append(aux)
+            for x in host_group:
+                host_container.append(x['id'])
+            for y in swithc_group:
+                switch_container.append(y['id'])
+            for z in controller_group:
+                controller_container.append(z['id'])
+            for cn in link_group:
+                link_container.append(cn['connection'])
+                aux = {
+                    'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
+                link_array.append(aux)
 
-                print(' * Creacion de la Red ...')
+            print(' * Creacion de la Red ...')
 
-                for b in host_container:
-                    host_added.append(net.addHost(b))
-                print(' * Hosts Creados ...')
+            for b in host_container:
+                host_added.append(net.addHost(b))
+            print(' * Hosts Creados ...')
 
-                for d in switch_container:
-                    switch_added.append(net.addSwitch(d))
-                print(' * Switchs Creados ...')
+            for d in switch_container:
+                switch_added.append(net.addSwitch(d))
+            print(' * Switchs Creados ...')
 
-                for f in controller_container:
-                    # controller_added.append(net.addController(
-                    #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
-                    controller_added.append(net.addController(f))
-                print(' * Controladores Creados ...')
+            for f in controller_container:
+                # controller_added.append(net.addController(
+                #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
+                controller_added.append(net.addController(f))
+            print(' * Controladores Creados ...')
 
-                for n in link_array:
-                    l = n['cn'].split(",")
-                    for m in switch_added:
-                        if l[0] == m.name:
-                            for j in host_added:
-                                if l[1] == j.name:
-                                    linkeados.append(net.addLink(
-                                        m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
-                print(' * Links Creados ...')
+            for n in link_array:
+                l = n['cn'].split(",")
+                for m in switch_added:
+                    if l[0] == m.name:
+                        for j in host_added:
+                            if l[1] == j.name:
+                                linkeados.append(net.addLink(
+                                    m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
+            print(' * Links Creados ...')
 
-                net.start()
-                print(' * Red Emulada con Exito ...')
+            net.start()
+            print(' * Red Emulada con Exito ...')
 
-                at = {}
-                at['red'] = 'creada'
-                return at
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error']: 'Failed to Generate Network'
-                tend = time.time()
-                print(' * Proceso Finalizado...')
-                return(answer)
-        else:
+            at = {}
+            at['red'] = 'creada'
+            return at
+        except:
+            print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Mininet is Started'
-            return answer
+            answer['Error']: 'Failed to Generate Network'
+            tend = time.time()
+            print(' * Proceso Finalizado...')
+            return(answer)
+
 def reset_variables():
     host_group = []
     swithc_group = []
@@ -1140,6 +1136,7 @@ def tcp_all_for_all_traffic_mode():
         name_files_size = len(name_files)
         temporal_file_list = []
         traffic_incomplete = True
+
         print(" * Generando Tráfico...")
         while traffic_incomplete:
             for element in list_validation:
@@ -1170,20 +1167,21 @@ def tcp_all_for_all_traffic_mode():
                 else:
                     reset_traffic(element[0], element[1], element[2])
 
-            print('end: ',contador_end,' rec: ',contador_receiver) 
+            
             
             # Si el numero de end es igual an de la clave de end['receiver_tcp_congestion'] el trafico fue exitoso
             if contador_receiver == name_files_size and contador_end == contador_receiver :
+                print(' * End: ',contador_end,' Rec: ',contador_receiver) 
                 traffic_incomplete = False
                 break      
             elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
-                print('Error: ', 'Imposible Crear el Trafico')
+                print(' * Error: ', 'Imposible Crear el Trafico')
                 answer = {}
                 answer['Error']: 'Failed to Create Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
-                print('Tiempo de Ejecucion: ',totaltime)
-                print('Proceso Finalizado...')
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
                 return(answer)
                 break
         
@@ -1203,7 +1201,7 @@ def tcp_all_for_all_traffic_mode():
 
                         json_temporal_file = json.loads(read_file);
                     except:
-                        print('Non-Existent File: ',server_file)
+                        print(' * Non-Existent File: ',server_file)
                         pass
                     
                     if 'receiver_tcp_congestion' in json_temporal_file['end']:
