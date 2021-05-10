@@ -73,7 +73,7 @@ w = threading.Thread(target=wireshark_launcher,)
 
 @app.route('/',methods=['GET'])
 def get():
-    return 'Este es el Sevidor Mininet'
+    return 'Este es el Sevidor Mininet by Atlas'
 
 @app.route('/',methods=['POST'])
 def executor():
@@ -137,34 +137,19 @@ def executor():
             print(' * Emulación Terminada')
 
         return ans
+    #Tipos de Distribucion del Tráfico
     elif 'TCP' in json_data:
         print(' * Datos: ',content)
         if 'all_for_all' in json_data:
-            try:
-                return tcp_all_for_all_traffic_mode()
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error']: 'Failed to Response to Client'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
+            answer = tcp_all_for_all_traffic_mode()
+            print(answer)
+            return(answer)
 
         elif 'one_for_all' in json_data:
-            try:
-                return tcp_one_for_all_traffic_mode()
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error']: 'Failed to Response to Client'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
-        #Tipos de Distribucion del Tráfico
+            answer = tcp_one_for_all_traffic_mode()
+            print (answer)
+            return (answer)
+        
     elif 'UDP' in json_data:
         pass
     else:
@@ -173,7 +158,6 @@ def executor():
             print(' * Creando el Arreglo de la Red ...')
             # Contiene el diccionario de la clave Items
             array_data = content['items']
-
             ipClient = content['IpClient']
             aux = ""
             for ip in ipClient:
@@ -244,7 +228,7 @@ def executor():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Generate Network'
+            answer['Error'] = 'Failed to Generate Network'
             tend = time.time()
             print(' * Proceso Finalizado...')
             return(answer)
@@ -550,6 +534,7 @@ def tcp_all_for_all_traffic_mode():
                     totaltime = tend - tstart
                     print(' * Tiempo de Ejecucion: ',totaltime)
                     print(' * Proceso Finalizado...')
+                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
                     return answer
 
         serversEnabled = True
@@ -1125,6 +1110,7 @@ def tcp_all_for_all_traffic_mode():
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
             print(' * Proceso Finalizado...')
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
             return answer
             
         time.sleep(1);
@@ -1134,8 +1120,11 @@ def tcp_all_for_all_traffic_mode():
         list_end = []
         list_receiver = []
         name_files_size = len(name_files)
+        name_files_server_size = len(name_files_server)
         temporal_file_list = []
         traffic_incomplete = True
+
+        print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
 
         print(" * Generando Tráfico...")
         while traffic_incomplete:
@@ -1176,19 +1165,20 @@ def tcp_all_for_all_traffic_mode():
                 break      
             elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
                 print(' * Error: ', 'Imposible Crear el Trafico')
+                print(' * End: ',contador_end,' Rec: ',contador_receiver)
                 answer = {}
-                answer['Error']: 'Failed to Create Traffic'
+                answer['Error'] = 'Failed to Create Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
                 print(' * Proceso Finalizado...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
                 return(answer)
                 break
         
 
         #Comprobar que los archivos  generados están completos para seguir con la ejecución 
         print(' * Comprobando Archivos Generados...')
-        name_files_server_size = len(name_files_server)
         conta = 0
         temporal_file_list_server= []
         while conta < name_files_server_size:
@@ -1225,7 +1215,7 @@ def tcp_all_for_all_traffic_mode():
             except:
                 print(' * File Error: ', str(name))
                 answer = {}
-                answer['Error']: 'Failed to Read Client Traffic'
+                answer['Error'] = 'Failed to Read Client Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
@@ -1241,7 +1231,7 @@ def tcp_all_for_all_traffic_mode():
             except:
                 print(' * File Error: ', str(name_server))
                 answer = {}
-                answer['Error']: 'Failed to Read Server Traffic'
+                answer['Error'] = 'Failed to Read Server Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
@@ -1330,7 +1320,7 @@ def tcp_all_for_all_traffic_mode():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Generate Output Server Traffic'
+            answer['Error'] = 'Failed to Generate Output Server Traffic'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
@@ -1426,7 +1416,7 @@ def tcp_all_for_all_traffic_mode():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Generate Output Server Traffic'
+            answer['Error'] = 'Failed to Generate Output Server Traffic'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
@@ -1455,7 +1445,6 @@ def tcp_one_for_all_traffic_mode():
         port_list =[]
         # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
         #Datos del modo de transmision
-        #Solo una de estas tres opciones
         time_e = str('0') #t
         number = '0k'#n
         block = '0k' #k -no used
@@ -1486,7 +1475,7 @@ def tcp_one_for_all_traffic_mode():
             except:
                 print(' * Error:', sys.exc_info()[0])
                 answer = {}
-                answer['Error']: 'Failed to Reload Iperf'
+                answer['Error'] = 'Failed to Reload Iperf'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
@@ -1505,7 +1494,7 @@ def tcp_one_for_all_traffic_mode():
                 except:
                     print('Error: ', sys.exc_info()[0])
                     answer = {}
-                    answer['Error']: 'Failed to Create Servers'
+                    answer['Error'] = 'Failed to Create Servers'
                     tend = time.time()
                     totaltime = tend - tstart
                     print('Tiempo de Ejecucion: ',totaltime)
@@ -2078,7 +2067,7 @@ def tcp_one_for_all_traffic_mode():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Create Clients'
+            answer['Error'] = 'Failed to Create Clients'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
@@ -2092,8 +2081,12 @@ def tcp_one_for_all_traffic_mode():
         list_end = []
         list_receiver = []
         name_files_size = len(name_files)
+        name_files_server_size = len(name_files_server)
         temporal_file_list = []
         traffic_incomplete = True
+
+        print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
+
         print(" * Generando Tráfico...")
         while traffic_incomplete:
             for element in list_validation:
@@ -2130,8 +2123,9 @@ def tcp_one_for_all_traffic_mode():
                 break      
             elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
                 print(' * Error: Imposible Crear Tráfico')
+                print('end: ',contador_end,' rec: ',contador_receiver)
                 answer = {}
-                answer['Error']: 'Failed to Create Traffic'
+                answer['Error'] = 'Failed to Create Traffic'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
@@ -2142,7 +2136,6 @@ def tcp_one_for_all_traffic_mode():
 
         #Comprobar que los archivos  generados están completos para seguir con la ejecución 
         print(' * Comprobando Archivos Generados...')
-        name_files_server_size = len(name_files_server)
         conta = 0
         temporal_file_list_server= []
         while conta < name_files_server_size:
@@ -2158,7 +2151,7 @@ def tcp_one_for_all_traffic_mode():
 
                         json_temporal_file = json.loads(read_file);
                     except:
-                        print(server_file)
+                        print('Non-Exist File:',server_file)
                         pass
                     
                     if 'receiver_tcp_congestion' in json_temporal_file['end']:
@@ -2182,7 +2175,7 @@ def tcp_one_for_all_traffic_mode():
             except:
                 print(' * File Error: ', name)
                 answer = {}
-                answer['Error']: 'Failed to Read Clients'
+                answer['Error'] = 'Failed to Read Clients'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
@@ -2199,7 +2192,7 @@ def tcp_one_for_all_traffic_mode():
             except:
                 print(' * File Error: ', name_server)
                 answer = {}
-                answer['Error']: 'Failed to Read Clients'
+                answer['Error'] = 'Failed to Read Clients'
                 tend = time.time()
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
@@ -2286,7 +2279,7 @@ def tcp_one_for_all_traffic_mode():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Genereate Output Server'
+            answer['Error'] = 'Failed to Genereate Output Server'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
@@ -2384,7 +2377,7 @@ def tcp_one_for_all_traffic_mode():
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error']: 'Failed to Generate Output Client'
+            answer['Error'] = 'Failed to Generate Output Client'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
