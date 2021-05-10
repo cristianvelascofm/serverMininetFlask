@@ -102,6 +102,7 @@ def executor():
             print(" * Terminando Emulacion ...")
             for lk in linkeados:
                 try:
+                    
                     net.delLink(lk)
                 except:
                     print(' * Error: ', sys.exc_info()[0])
@@ -138,22 +139,22 @@ def executor():
 
         return ans
     #Tipos de Distribucion del Tráfico
+    # Transmission Control Protocol
     elif 'TCP' in json_data:
         print(' * Datos: ',content)
+
         if 'all_for_all' in json_data:
             answer = tcp_all_for_all_traffic_mode()
-            print(answer)
             return(answer)
 
         elif 'one_for_all' in json_data:
             answer = tcp_one_for_all_traffic_mode()
-            print (answer)
             return (answer)
-        
+    # User Datagram Protocol
     elif 'UDP' in json_data:
         pass
     else:
-        
+        # Creación y Montaje de la Red en Mininet
         try:
             print(' * Creando el Arreglo de la Red ...')
             # Contiene el diccionario de la clave Items
@@ -469,13 +470,14 @@ def reset_traffic(host_client, host_server, port):
         window = str(json_data['w'])
         host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
 
-
+# Se activan al "mismo tiempo" el trafico en todos los clientes
 def tcp_all_for_all_traffic_mode():
     global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
     if('global' in json_data):
         print(' * All for All : TCP')
         host_size= (len(host_added))-1
         port_list =[]
+        initial_port = 5000
         # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
         #Datos del modo de transmision
         #Solo una de estas tres opciones
@@ -1436,13 +1438,14 @@ def tcp_all_for_all_traffic_mode():
         pass
 
 
-
+# Se activa el trafico en un Cliente y el siguienbte espera a que acabe para iniciar el trafico del siguiente Cliente
 def tcp_one_for_all_traffic_mode():
     global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
     if('global' in json_data):
         print(' * One for All : TCP')
         host_size= (len(host_added))-1
         port_list =[]
+        initial_port = 5000
         # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
         #Datos del modo de transmision
         time_e = str('0') #t
