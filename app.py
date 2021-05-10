@@ -102,7 +102,6 @@ def executor():
             print(" * Terminando Emulacion ...")
             for lk in linkeados:
                 try:
-                    
                     net.delLink(lk)
                 except:
                     print(' * Error: ', sys.exc_info()[0])
@@ -145,6 +144,8 @@ def executor():
 
         if 'all_for_all' in json_data:
             answer = tcp_all_for_all_traffic_mode()
+            with open('answer.json', 'w') as outfile:
+                json.dump(answer, outfile)
             return(answer)
 
         elif 'one_for_all' in json_data:
