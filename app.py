@@ -1141,20 +1141,21 @@ def tcp_all_for_all_traffic_mode():
                     else:
                         try:
                             json_temporal_file = json.loads(read_file)
+                        
+                            if 'end' in json_temporal_file :
+                                if element in list_end:
+                                    pass
+                                else:
+                                    list_end.append(element)
+                                    contador_end += 1
+                            if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                                if element in list_receiver:
+                                    pass
+                                else:
+                                    list_receiver.append(element)
+                                    contador_receiver += 1
                         except:
                             pass
-                        if 'end' in json_temporal_file :
-                            if element in list_end:
-                                pass
-                            else:
-                                list_end.append(element)
-                                contador_end += 1
-                        if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                            if element in list_receiver:
-                                pass
-                            else:
-                                list_receiver.append(element)
-                                contador_receiver += 1
                 # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                 else:
                     reset_traffic(element[0], element[1], element[2])
