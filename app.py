@@ -106,7 +106,7 @@ def executor():
                 except:
                     print(' * Error: ', sys.exc_info()[0])
                     answer = {}
-                    answer['Error']: 'Failed to Delete Links'
+                    answer['Error'] = 'Failed to Delete Links'
                     print(' * Proceso Finalizado...')
                     return(answer)
             try:
@@ -114,7 +114,7 @@ def executor():
             except:
                 print(' * Error: ', sys.exc_info()[0])
                 answer = {}
-                answer['Error']: 'Failed to Stop Mininet'
+                answer['Error'] = 'Failed to Stop Mininet'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
@@ -151,7 +151,7 @@ def executor():
             except:
                 print(' * Error: ', sys.exc_info()[0])
                 answer = {}
-                answer['Error']: 'Failed to Send Response'
+                answer['Error'] = 'Failed to Send Response'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
@@ -167,7 +167,7 @@ def executor():
             except:
                 print(' * Error: ', sys.exc_info()[0])
                 answer = {}
-                answer['Error']: 'Failed to Send Response'
+                answer['Error'] = 'Failed to Send Response'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
@@ -257,11 +257,11 @@ def executor():
             print(' * Proceso Finalizado...')
             return(answer)
 
-
+# Comprueba el limite de memoria en la maquina huesped
 def machine_condition_checker():
     tot_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
     
-    if int(free_memory) <= 1000:
+    if int(free_memory) <= 2048:
         return True
     else:
         return False
@@ -1734,7 +1734,7 @@ def tcp_all_for_all_traffic_mode():
 
             name_files_server = []
         except:
-            print(' * Error: ', sys.exc_info()[0])
+            print(' * Error: ',name_server,' - ', sys.exc_info()[0])
             answer = {}
             answer['Error'] = 'Failed to Generate Output Server Traffic'
             tend = time.time()
@@ -1839,7 +1839,7 @@ def tcp_all_for_all_traffic_mode():
                     print(' * Proceso Finalizado...')
                     return answer 
         except:
-            print(' * Error: ', sys.exc_info()[0])
+            print(' * Error: ',name,' - ', sys.exc_info()[0])
             answer = {}
             answer['Error'] = 'Failed to Generate Output Server Traffic'
             tend = time.time()
@@ -3082,7 +3082,7 @@ def tcp_one_for_all_traffic_mode():
                     print(' * Proceso Finalizado...')
                     return answer
         except:
-            print(' * Error: ', sys.exc_info()[0])
+            print(' * Error: ',name_server, ' - ' ,sys.exc_info()[0])
             answer = {}
             answer['Error'] = 'Failed to Genereate Output Server'
             tend = time.time()
@@ -3189,7 +3189,7 @@ def tcp_one_for_all_traffic_mode():
                     print(' * Proceso Finalizado...')
                     return answer
         except:
-            print(' * Error: ', sys.exc_info()[0])
+            print(' * Error: ', name ,' - ' , sys.exc_info()[0])
             answer = {}
             answer['Error'] = 'Failed to Generate Output Client'
             tend = time.time()
