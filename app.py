@@ -143,15 +143,15 @@ def executor():
         print(' * Datos: ',content)
 
         if 'all_for_all' in json_data:
-            answer = tcp_all_for_all_traffic_mode()
-            with open('answer.json', 'w') as outfile:
-                json.dump(answer, outfile)
             try:
+                answer = tcp_all_for_all_traffic_mode()
+                with open('answer.json', 'w') as outfile:
+                    json.dump(answer, outfile)
                 return(answer)
             except:
                 print(' * Error: ', sys.exc_info()[0])
                 answer = {}
-                answer['Error']: 'Failed to Stop Mininet'
+                answer['Error']: 'Failed to Send Response'
                 tend = time.time()
                 totaltime = tend - tstart
                 print('Tiempo de Ejecucion: ',totaltime)
@@ -159,8 +159,20 @@ def executor():
                 return(answer)
 
         elif 'one_for_all' in json_data:
-            answer = tcp_one_for_all_traffic_mode()
-            return (answer)
+            try:
+                answer = tcp_one_for_all_traffic_mode()
+                with open('answer.json', 'w') as outfile:
+                    json.dump(answer, outfile)
+                return(answer)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Send Response'
+                tend = time.time()
+                totaltime = tend - tstart
+                print('Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
     # User Datagram Protocol
     elif 'UDP' in json_data:
         pass
