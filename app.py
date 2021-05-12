@@ -146,7 +146,17 @@ def executor():
             answer = tcp_all_for_all_traffic_mode()
             with open('answer.json', 'w') as outfile:
                 json.dump(answer, outfile)
-            return(answer)
+            try:
+                return(answer)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error']: 'Failed to Stop Mininet'
+                tend = time.time()
+                totaltime = tend - tstart
+                print('Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return(answer)
 
         elif 'one_for_all' in json_data:
             answer = tcp_one_for_all_traffic_mode()
