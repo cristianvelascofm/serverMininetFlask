@@ -245,6 +245,16 @@ def executor():
             print(' * Proceso Finalizado...')
             return(answer)
 
+
+def machine_condition_checker():
+    tot_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
+    
+    if int(free_memory) <= 1000:
+        return True
+    else:
+        return False
+
+
 def reset_variables():
     host_group = []
     swithc_group = []
@@ -519,6 +529,16 @@ def tcp_all_for_all_traffic_mode():
             try:
                 print(' * Reiniciando el Servicio iperf3...')
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer    
             except:
                 print(' * Error: ', sys.exc_info()[0])
                 answer = {}
@@ -527,6 +547,7 @@ def tcp_all_for_all_traffic_mode():
                 totaltime = tend - tstart
                 print(' * Tiempo de Ejecucion: ',totaltime)
                 print(' * Proceso Finalizado...')
+                
                 return answer
             
 
@@ -539,6 +560,15 @@ def tcp_all_for_all_traffic_mode():
                     name_files_server.append(str(host_server)+'_'+str(port))
                     aux = [host_server, port]
                     aux_array.append(aux)
+                    if machine_condition_checker() == True:
+                        print(' * Error: Límite de Memoria Alcanzado')
+                        answer = {}
+                        answer['Error'] = 'Memory Limit Reached'
+                        tend = time.time()
+                        totaltime = tend - tstart
+                        print(' * Tiempo de Ejecucion: ',totaltime)
+                        print(' * Proceso Finalizado...')
+                        return answer    
                 except:
                     print(' * Error: ', sys.exc_info()[0])
                     answer = {}
@@ -581,6 +611,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer    
 
                             
                                 # Solo Tiempo e Intervalo
@@ -598,6 +637,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
 
                                 # Solo Tiempo e Ancho de banda
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
@@ -614,6 +662,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e tamaño bloque
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -629,6 +686,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo y ventana
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     traffic_mode = 't-w'
@@ -645,6 +711,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e intervalo e ancho de bnda
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -661,6 +736,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e intervalo e ventana
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -677,6 +761,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e intervalo e tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -693,6 +786,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                             # Solo Tiempo e intervalo e ancho de banda e ventana
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -710,6 +812,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -727,6 +838,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -745,6 +865,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -759,6 +888,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -774,6 +912,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Ventana
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -789,6 +936,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -804,6 +960,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Ancho de banda
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -820,6 +985,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Ventana
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -836,6 +1010,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -852,6 +1035,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -869,6 +1061,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -886,6 +1087,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -904,6 +1114,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -918,6 +1137,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes - Ancho de banda
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -933,6 +1161,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -948,6 +1185,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -963,6 +1209,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes - Ancho de Banda - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -979,6 +1234,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                             # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -995,6 +1259,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -1012,6 +1285,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ancho de Banda
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     bw = str(json_data['b'])
@@ -1026,6 +1308,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ancho de Banda - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     bw = str(json_data['b'])
@@ -1041,6 +1332,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ancho de Banda - Tmaño Bloque 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     bw = str(json_data['b'])
@@ -1056,6 +1356,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ancho de Banda - Ventana - Tmaño Bloque 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     length = str(json_data['l'])
@@ -1072,6 +1381,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ventana 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     window = str(json_data['w'])
@@ -1086,6 +1404,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Solo Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     window = str(json_data['w'])
@@ -1101,6 +1428,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
                                 # Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     length = str(json_data['l'])
@@ -1115,6 +1451,15 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer   
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer={}                   
@@ -1170,6 +1515,15 @@ def tcp_all_for_all_traffic_mode():
                 else:
                     reset_traffic(element[0], element[1], element[2])
 
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer   
             
             
             # Si el numero de end es igual an de la clave de end['receiver_tcp_congestion'] el trafico fue exitoso
@@ -1216,6 +1570,15 @@ def tcp_all_for_all_traffic_mode():
                             conta += 1
                     else:
                         pass
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer   
 
         time.sleep(1)
 
@@ -1226,6 +1589,15 @@ def tcp_all_for_all_traffic_mode():
                 archive_json = json.loads(open(str(name)+'.json').read())
                 dict_data_traffic[str(name)] = archive_json
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer 
             except:
                 print(' * File Error: ', str(name))
                 answer = {}
@@ -1242,6 +1614,15 @@ def tcp_all_for_all_traffic_mode():
                 archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                 dict_data_traffic_server[str(name_server)] = archive_json_server
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer 
             except:
                 print(' * File Error: ', str(name_server))
                 answer = {}
@@ -1329,6 +1710,15 @@ def tcp_all_for_all_traffic_mode():
                 data_gen= {}
                 times = {}
                 procces_data = {}
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer 
 
             name_files_server = []
         except:
@@ -1423,10 +1813,19 @@ def tcp_all_for_all_traffic_mode():
                 procces_data['general']= data_gen
                 
                 traffic[str(name)] = procces_data
-                
                 data_gen= {}
                 times = {}
                 procces_data = {}
+
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer 
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
@@ -1487,6 +1886,15 @@ def tcp_one_for_all_traffic_mode():
             try:
                 print(' * Reiniciando el Servicio iperf3...')
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer 
             except:
                 print(' * Error:', sys.exc_info()[0])
                 answer = {}
@@ -1506,6 +1914,15 @@ def tcp_one_for_all_traffic_mode():
                     name_files_server.append(str(host_server)+'_'+str(port))
                     aux = [host_server, port]
                     aux_array.append(aux)
+                    if machine_condition_checker() == True:
+                        print(' * Error: Límite de Memoria Alcanzado')
+                        answer = {}
+                        answer['Error'] = 'Memory Limit Reached'
+                        tend = time.time()
+                        totaltime = tend - tstart
+                        print(' * Tiempo de Ejecucion: ',totaltime)
+                        print(' * Proceso Finalizado...')
+                        return answer 
                 except:
                     print('Error: ', sys.exc_info()[0])
                     answer = {}
@@ -1547,6 +1964,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer 
                                 # Solo Tiempo e Intervalo
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1562,6 +1988,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e Ancho de banda
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1577,6 +2012,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e tamaño bloque
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1592,6 +2036,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo y ventana
                                 elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     traffic_mode = 't-w'
@@ -1608,6 +2061,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e intervalo e ancho de bnda
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1624,6 +2086,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e intervalo e ventana
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1640,6 +2111,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e intervalo e tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1656,6 +2136,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                             # Solo Tiempo e intervalo e ancho de banda e ventana
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1673,6 +2162,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1690,6 +2188,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
                                 elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     time_e = str(json_data['t'])
@@ -1708,6 +2215,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1722,6 +2238,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1737,6 +2262,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Ventana
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1752,6 +2286,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1767,6 +2310,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Ancho de banda
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1783,6 +2335,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Ventana
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1799,6 +2360,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1815,6 +2385,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1832,6 +2411,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1849,6 +2437,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     interval = str(json_data['i'])
@@ -1867,6 +2464,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -1881,6 +2487,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes - Ancho de banda
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -1896,6 +2511,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -1911,6 +2535,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -1926,6 +2559,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes - Ancho de Banda - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     number = str(json_data['n'])
@@ -1942,6 +2584,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                             # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -1958,6 +2609,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     number = str(json_data['n'])
@@ -1975,6 +2635,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ancho de Banda
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
                                     bw = str(json_data['b'])
@@ -1989,6 +2658,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ancho de Banda - Ventana
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     bw = str(json_data['b'])
@@ -2004,6 +2682,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ancho de Banda - Tmaño Bloque 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     bw = str(json_data['b'])
@@ -2019,6 +2706,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ancho de Banda - Ventana - Tmaño Bloque 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     length = str(json_data['l'])
@@ -2035,6 +2731,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ventana 
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
                                     window = str(json_data['w'])
@@ -2049,6 +2754,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Solo Ventana - Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
                                     window = str(json_data['w'])
@@ -2064,6 +2778,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
                                 # Tamaño Bloque
                                 elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
                                     length = str(json_data['l'])
@@ -2078,6 +2801,15 @@ def tcp_one_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    if machine_condition_checker() == True:
+                                        print(' * Error: Límite de Memoria Alcanzado')
+                                        answer = {}
+                                        answer['Error'] = 'Memory Limit Reached'
+                                        tend = time.time()
+                                        totaltime = tend - tstart
+                                        print(' * Tiempo de Ejecucion: ',totaltime)
+                                        print(' * Proceso Finalizado...')
+                                        return answer
 
         except:
             print(' * Error: ', sys.exc_info()[0])
@@ -2129,6 +2861,15 @@ def tcp_one_for_all_traffic_mode():
                                     contador_receiver += 1
                         except:
                             pass
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
                 # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
                 else:
                     reset_traffic(element[0], element[1], element[2])
@@ -2178,6 +2919,15 @@ def tcp_one_for_all_traffic_mode():
                             conta += 1
                     else:
                         pass
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
 
         time.sleep(1)
 
@@ -2188,6 +2938,15 @@ def tcp_one_for_all_traffic_mode():
                 archive_json = json.loads(open(str(name)+'.json').read())
                 dict_data_traffic[str(name)] = archive_json
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
             except:
                 print(' * File Error: ', name)
                 answer = {}
@@ -2205,6 +2964,15 @@ def tcp_one_for_all_traffic_mode():
                 archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
                 dict_data_traffic_server[str(name_server)] = archive_json_server
                 os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
             except:
                 print(' * File Error: ', name_server)
                 answer = {}
@@ -2292,6 +3060,15 @@ def tcp_one_for_all_traffic_mode():
                 data_gen= {}
                 times = {}
                 procces_data = {}
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
@@ -2386,10 +3163,19 @@ def tcp_one_for_all_traffic_mode():
                 procces_data['general']= data_gen
                 
                 traffic[str(name)] = procces_data
-                
                 data_gen= {}
                 times = {}
                 procces_data = {}
+
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
