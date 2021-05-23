@@ -491,12 +491,12 @@ def traffic_executor_tcp():
         for host_server in host_added:
             port = initial_port
             if (str(host_server) == str(host_as_server)):
-                host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json')
+                host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json'+' &')
                 time.sleep(0.5)
                 name_files_server.append(str(host_as_server)+'_'+str(port))    
                 aux = [host_server, port]
                 aux_array.append(aux)
-
+                host_as_server = host_server
         serversEnabled = True 
         print(' * Estableciendo el Cliente...')
         for host_client in host_added:
