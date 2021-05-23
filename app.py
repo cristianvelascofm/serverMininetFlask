@@ -412,7 +412,7 @@ def traffic_executor_tcp():
                                     # Variable que contiene las ejecuciones quedebe tomar Iperf3
                                     trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
                                     # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
-                                    order = 'iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' '
+                                    orden = 'iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' '
                                     # Se genera la orden con la lectura del diccionario del trafico
                                     for t in trafico:
                                         orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
@@ -487,6 +487,7 @@ def traffic_executor_tcp():
         host_as_server = json_data['specific'][0]['host_server']
         host_as_client = json_data['specific'][0]['host_client']
 
+        print(' * Estableciendo el Servidor...')
         for host_server in host_added:
             port = initial_port
             if (str(host_server) == str(host_as_server)):
@@ -497,6 +498,7 @@ def traffic_executor_tcp():
                 aux_array.append(aux)
 
         serversEnabled = True 
+        print(' * Estableciendo el Cliente...')
         for host_client in host_added:
             port = initial_port
             if (str(host_client) == str(host_as_client)):
@@ -510,6 +512,7 @@ def traffic_executor_tcp():
                 #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
                 orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
                 #  Se Carga la orden al host Cliente
+                print(' * Cargando Orden en el Cliente ...')
                 host_client.cmd(orden)
                 # Creacion de Validadores Futuros
                 name_files.append(str(host_client)+'_'+str(server[0]))
