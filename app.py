@@ -505,7 +505,7 @@ def traffic_executor_tcp():
                 # Variable que contiene las ejecuciones quedebe tomar Iperf3
                 trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
                 # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
-                order = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
+                orden = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
                 # Se genera la orden con la lectura del diccionario del trafico
                 for t in trafico:
                     orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
@@ -563,28 +563,28 @@ def traffic_executor_tcp():
             print(' * Proceso Finalizado...')
             return answer
 
-            name_files_server.append(str(host_as_server)+'_'+str(port))    
-            aux = [host_as_server, port]
-            aux_array.append(aux)
-            # Variable que contiene las ejecuciones quedebe tomar Iperf3
-            trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
-            # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
-            order = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
-            # Se genera la orden con la lectura del diccionario del trafico
-            for t in trafico:
-                orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
-            #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
-            orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
-            #  Se Carga la orden al host Cliente
-            host_as_client.cmd(orden)
-            # Creación de Validadores Futuros
-            temp = str(host_as_client)+'_'+str(host_as_server)
-            name_files.append(str(host_client)+'_'+str(server[0]))
-            element_to_validate = []
-            element_to_validate.append(host_client)
-            element_to_validate.append(server[0])
-            element_to_validate.append(server[1])
-            list_validation.append(element_to_validate)
+        name_files_server.append(str(host_as_server)+'_'+str(port))    
+        aux = [host_as_server, port]
+        aux_array.append(aux)
+        # Variable que contiene las ejecuciones quedebe tomar Iperf3
+        trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
+        # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
+        orden = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
+        # Se genera la orden con la lectura del diccionario del trafico
+        for t in trafico:
+            orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
+        #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
+        orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
+        #  Se Carga la orden al host Cliente
+        host_as_client.cmd(orden)
+        # Creación de Validadores Futuros
+        temp = str(host_as_client)+'_'+str(host_as_server)
+        name_files.append(str(host_client)+'_'+str(server[0]))
+        element_to_validate = []
+        element_to_validate.append(host_client)
+        element_to_validate.append(server[0])
+        element_to_validate.append(server[1])
+        list_validation.append(element_to_validate)
 
 
     
