@@ -137,45 +137,43 @@ def executor():
             print(' * Emulación Terminada')
 
         return ans
+    
     #Tipos de Distribucion del Tráfico
     # Transmission Control Protocol
     elif 'TCP' in json_data:
         print(' * Datos: ',content)
+        try:
+            answer = traffic_executor_tcp()
+            with open('answer.json', 'w') as outfile:
+                json.dump(answer, outfile)
+            return(answer)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Send Response'
+            tend = time.time()
+            totaltime = tend - tstart
+            print('Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
 
-        if 'all_for_all' in json_data:
-            try:
-                answer = tcp_all_for_all_traffic_mode()
-                with open('answer.json', 'w') as outfile:
-                    json.dump(answer, outfile)
-                return(answer)
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error'] = 'Failed to Send Response'
-                tend = time.time()
-                totaltime = tend - tstart
-                print('Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
-
-        elif 'one_for_all' in json_data:
-            try:
-                answer = tcp_one_for_all_traffic_mode()
-                with open('answer.json', 'w') as outfile:
-                    json.dump(answer, outfile)
-                return(answer)
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error'] = 'Failed to Send Response'
-                tend = time.time()
-                totaltime = tend - tstart
-                print('Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
     # User Datagram Protocol
     elif 'UDP' in json_data:
-        pass
+        print(' * Datos: ',content)
+        try:
+            answer = traffic_executor_udp()
+            with open('answer.json', 'w') as outfile:
+                json.dump(answer, outfile)
+            return(answer)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Send Response'
+            tend = time.time()
+            totaltime = tend - tstart
+            print('Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
     else:
         # Creación y Montaje de la Red en Mininet
         try:
@@ -266,7 +264,7 @@ def machine_condition_checker():
     else:
         return False
 
-
+#  Devuelve las variables a su estado inicial
 def reset_variables():
     host_group = []
     swithc_group = []
@@ -293,244 +291,48 @@ def reset_variables():
     host_sender = None
     net = Mininet(build=False)
 
+# Reinicia el Tráfico en un host cliente y un host servidor en particular
 def reset_traffic(host_client, host_server, port):
     global json_data
-    print('Reset_Traffic')
+    print(' * Reiniciando Tráfico en: '+str(host_client)+'-'+str(host_server))
     host_server.cmd('fuser -k -n tcp '+str(port))
     host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
     time.sleep(1)
-    #Solo el parámetro de Tiempo
-    if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Tiempo con Intervalo 
-    elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Longitud 
-    elif('t' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        length = str(json_data['n'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -n '+length+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Ancho de Banda
-    elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        bw = str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Ventana
-    elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        traffic_mode = 't-w'
-        time_e = str(json_data['t'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo y Longitud
-    elif('t' in json_data and ('i' in json_data) and ( 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        length =  str(json_data['n'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -n '+length+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo y Ancho de Banda
-    elif('t' in json_data and ('i' in json_data) and ( not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        bw =  str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Longitud y Ventana
-    elif('t' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        length = str(json_data['n'])
-        window =  str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con  Ancho de Banda y Ventana
-    elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        window = str(json_data['w'])
-        bw =  str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -w '+window+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo y Ventana 
-    elif('t' in json_data and ('i' in json_data) and ( not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        window =  str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo Longitud  Ancho de Banda
-    elif('t' in json_data and ('i' in json_data) and ( 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        length =  str(json_data['n'])
-        bw = str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -n '+length+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo Longitud  Ventana
-    elif('t' in json_data and ('i' in json_data) and ( 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        length =  str(json_data['l'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -n '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Ancho de Banda Longitud  Ventana
-    elif('t' in json_data and (not 'i' in json_data) and ( 'n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        bw = str(json_data['b'])
-        length =  str(json_data['n'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -b '+bw+' -n '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parametro de Tiempo con Intervalo Longitud  Ancho de Banda Ventana
-    elif('t' in json_data and ('i' in json_data) and ( 'n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        time_e = str(json_data['t'])
-        interval = str(json_data['i'])
-        length =  str(json_data['n'])
-        bw = str(json_data['b'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -i '+interval+' -n '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo
-    elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        interval = str(json_data['i'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo y Longitud
-    elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        interval = str(json_data['i'])
-        length = str(json_data['n'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -n ' +length+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo y Anchode Banda
-    elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        interval = str(json_data['i'])
-        bw = str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo y Ventana
-    elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        interval = str(json_data['i'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo, Anchode Banda y Longitud
-    elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        interval = str(json_data['i'])
-        bw = str(json_data['b'])
-        length = str(json_data['n'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -b '+bw+' -n '+length+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-    #Solo el parámetro de Intervalo, Anchode Banda y Window
-    elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and ( 'b' in json_data) and ( 'w' in json_data)):
-        interval = str(json_data['i'])
-        bw = str(json_data['b'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-       
+     # Variable que contiene las ejecuciones quedebe tomar Iperf3
+    trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
+    # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
+    order = 'iperf3 -c '+str(host_server.IP())+' -p '+str(host_server[1])+' '
+    # Se genera la orden con la lectura del diccionario del trafico
+    for t in trafico:
+        orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
+    # Crea la orden Completa dependiendo de que modo tenga One for All o ALl for All
+    if 'all_for_all' in json_data:
+        #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que se ejecute en segundo Plano con el '&'
+        orden = orden+'-J>'+str(host_client)+'_'+str(host_server[0])+'.json'+' &'
+    elif 'one_for_all' in json_data:
+        #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
+        orden = orden+'-J>'+str(host_client)+'_'+str(host_server[0])+'.json'
+    #  Se Carga la orden al host Cliente
+    host_client.cmd(orden)
 
-    #Solo el parámetro de Intervalo, Longitud y Window
-    elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ( 'w' in json_data)):
-        interval = str(json_data['i'])
-        length = str(json_data['n'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -n '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-
-
-
-    #Solo el parámetro de Intervalo, Anchode Banda, Longitud y Window
-    elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        interval = str(json_data['i'])
-        bw = str(json_data['b'])
-        length = str(json_data['n'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -i '+interval+' -b '+bw+' -n '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-
-    #Solo el parámetro de Longitud
-    elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data)):
-        length = str(json_data['n'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -n '+length+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-
-
-    #Solo el parámetro de Longitud y Ancho de Banda
-    elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        length = str(json_data['n'])
-        bw = str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -n '+length+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-
-
-    #Solo el parámetro de Longitud y Ventana
-    elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        
-        length = str(json_data['n'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -n '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-        
-
-    #Solo el parámetro de Longitud   Ancho de Banda y Ventana
-    elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        
-        length = str(json_data['n'])
-        bw = str(json_data['b'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -n '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-        
-
-    #Solo el parámetro de Ancho de Banda
-    elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data)):
-        
-        bw = str(json_data['b'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -b '+bw+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-        
-
-    #Solo el parámetro de  Ancho de Banda y Ventana
-    elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        
-        bw = str(json_data['b'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-        
-
-    #Solo el parámetro de Longitud   Ancho de Banda y Ventana
-    elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        
-        length = str(json_data['n'])
-        bw = str(json_data['b'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -n '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-        
-
-    #Solo el parametro de Tiempo Intervalo  Ancho de Banda Ventana
-    elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data)):
-        
-        time_e = str(json_data['t'])
-        bw = str(json_data['b'])
-        interval =  str(json_data['i'])
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -t '+time_e+' -b '+bw+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-       
-
-    #Solo el parametro de  Ventana
-    elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data)):
-        
-        window = str(json_data['w'])
-        host_client.cmd('iperf3 -c '+str(host_server.IP())+' -p '+str(port)+' -w '+window+' -J>'+str(host_client)+'_'+str(host_server)+'.json'+' &')
-
-# Se activan al "mismo tiempo" el trafico en todos los clientes
-def tcp_all_for_all_traffic_mode():
-    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
+# Ejecuta el Trafico TCP en Iperf3 
+def traffic_executor_tcp():
+    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port    
+    host_size= (len(host_added))-1
+    port_list =[]
+    initial_port = 5000
+    # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
+    traffic_mode = ''
+    wait_time = 1
+    dict_data_traffic = {}
+    dict_data_traffic_server = {}
+    file_traffic= []
+    data_traffic={}
+    procces_data={}
+    data_gen= {}
+    list_validation = []
     if('global' in json_data):
-        print(' * All for All : TCP')
-        host_size= (len(host_added))-1
-        port_list =[]
-        initial_port = 5000
-        # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
-        #Datos del modo de transmision
-        #Solo una de estas tres opciones
-        time_e = str('0') #t
-        number = '0k'#n
-        block = '0k' #k -no used
-        interval = str(1) #i
-        window = '500k' #w
-        length = '1m' #l
-        bw = '1k' # b
-        traffic_mode = ''
-        wait_time = 1
-        dict_data_traffic = {}
-        dict_data_traffic_server = {}
-        file_traffic= []
-        data_traffic={}
-        procces_data={}
-        data_gen= {}
-        list_validation = []
-
+        print(' * All for All : TCP - Global Mode')
         #Lista de Puertos
         for pt in range(host_size):
             initial_port = initial_port + 1
@@ -548,7 +350,7 @@ def tcp_all_for_all_traffic_mode():
                     answer['Error'] = 'Memory Limit Reached'
                     tend = time.time()
                     totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Tiempo de Ejecución: ',totaltime)
                     print(' * Proceso Finalizado...')
                     return answer    
             except:
@@ -557,9 +359,8 @@ def tcp_all_for_all_traffic_mode():
                 answer['Error'] = 'Failed to Reload Iperf3'
                 tend = time.time()
                 totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Tiempo de Ejecución: ',totaltime)
                 print(' * Proceso Finalizado...')
-                
                 return answer
             
 
@@ -578,7 +379,7 @@ def tcp_all_for_all_traffic_mode():
                         answer['Error'] = 'Memory Limit Reached'
                         tend = time.time()
                         totaltime = tend - tstart
-                        print(' * Tiempo de Ejecucion: ',totaltime)
+                        print(' * Tiempo de Ejecución: ',totaltime)
                         print(' * Proceso Finalizado...')
                         return answer    
                 except:
@@ -587,7 +388,7 @@ def tcp_all_for_all_traffic_mode():
                     answer['Error'] = 'Failed to Create Servers'
                     tend = time.time()
                     totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Tiempo de Ejecución: ',totaltime)
                     print(' * Proceso Finalizado...')
                     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
                     return answer
@@ -602,43 +403,30 @@ def tcp_all_for_all_traffic_mode():
         size_port = len(port_list)
         try:
             for server in aux_array:
-                for host_client in host_added:
-                    if not (str(host_client)+'_'+str(server[0])) in buffer_server:
-                        if not str(server) in buffer_server:
-                            if str(server[0]) == str(host_client):
-                                pass
-                            else:
-                                #Posibles casos de parametrizacion del Trafico en Iperf3.1
-                                # Solo Tiempo
-                                if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer    
+                    for host_client in host_added:
+                        if not (str(host_client)+'_'+str(server[0])) in buffer_server:
+                            if not str(server) in buffer_server:
+                                if str(server[0]) == str(host_client):
+                                    pass
+                                else:
+                                    # Variable que contiene las ejecuciones quedebe tomar Iperf3
+                                    trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
+                                    # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
+                                    order = 'iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' '
+                                    # Se genera la orden con la lectura del diccionario del trafico
+                                    for t in trafico:
+                                        orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
 
-                            
-                                # Solo Tiempo e Intervalo
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
+                                    # Crea la orden Completa dependiendo de que modo tenga One for All o ALl for All
+                                    if 'all_for_all' in json_data:
+                                        #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que se ejecute en segundo Plano con el '&'
+                                        orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'+' &'
+                                    elif 'one_for_all' in json_data:
+                                        #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
+                                        orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'
+                                    #  Se Carga la orden al host Cliente
+                                    host_client.cmd(orden)
+                                    # Creacion de Validadores Futuros
                                     temp = str(host_client)+'_'+str(server[0])
                                     ax = str(server)
                                     buffer_server.append(temp)
@@ -649,6 +437,7 @@ def tcp_all_for_all_traffic_mode():
                                     element_to_validate.append(server[0])
                                     element_to_validate.append(server[1])
                                     list_validation.append(element_to_validate)
+                                    # Si alcanza el Limite de Memoria sugerido Crash
                                     if machine_condition_checker() == True:
                                         print(' * Error: Límite de Memoria Alcanzado')
                                         answer = {}
@@ -657,1243 +446,80 @@ def tcp_all_for_all_traffic_mode():
                                         totaltime = tend - tstart
                                         print(' * Tiempo de Ejecucion: ',totaltime)
                                         print(' * Proceso Finalizado...')
-                                        return answer   
-
-                                # Solo Tiempo e Ancho de banda
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e tamaño bloque
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo y ventana
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    traffic_mode = 't-w'
-                                    time_e = str(json_data['t'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e intervalo e ancho de bnda
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e intervalo e ventana
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    window =  str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e intervalo e tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    length =  str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                            # Solo Tiempo e intervalo e ancho de banda e ventana
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Ventana
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Ancho de banda
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Ventana
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    window = str(json_data['w'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    length = str(json_data['l'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes - Ancho de banda
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes - Ancho de Banda - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                            # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ancho de Banda
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ancho de Banda - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ancho de Banda - Tmaño Bloque 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ancho de Banda - Ventana - Tmaño Bloque 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    length = str(json_data['l'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ventana 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Solo Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    window = str(json_data['w'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
-                                # Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer   
+                                        return answer
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer={}                   
             answer['Error'] = 'Failed to Create Clients'
             tend = time.time()
             totaltime = tend - tstart
-            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Tiempo de Ejecución: ',totaltime)
             print(' * Proceso Finalizado...')
             os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
             return answer
-            
-        time.sleep(1);
-        contador_end = 0
-        contador_receiver = 0
-        count = 0;
-        list_end = []
-        list_receiver = []
-        name_files_size = len(name_files)
-        name_files_server_size = len(name_files_server)
-        temporal_file_list = []
-        traffic_incomplete = True
-
-        print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
-
-        print(" * Generando Tráfico...")
-        while traffic_incomplete:
-            for element in list_validation:
-                file_name = r''+str(element[0])+'_'+str(element[1])+'.json'
-                # Si el archivo existe lo lee y revisa si esta completo
-                if os.path.exists(file_name):
-                    read_file = open(file_name).read()
-                    if read_file == '':
-                        pass
-                    else:
-                        try:
-                            json_temporal_file = json.loads(read_file)
-                        
-                            if 'end' in json_temporal_file :
-                                if element in list_end:
-                                    pass
-                                else:
-                                    list_end.append(element)
-                                    contador_end += 1
-                            if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                                if element in list_receiver:
-                                    pass
-                                else:
-                                    list_receiver.append(element)
-                                    contador_receiver += 1
-                        except:
-                            pass
-                # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
-                else:
-                    reset_traffic(element[0], element[1], element[2])
-
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer   
-            
-            
-            # Si el numero de end es igual an de la clave de end['receiver_tcp_congestion'] el trafico fue exitoso
-            if contador_receiver == name_files_size and contador_end == contador_receiver :
-                print(' * End: ',contador_end,' Rec: ',contador_receiver) 
-                traffic_incomplete = False
-                break      
-            elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
-                print(' * Error: ', 'Imposible Crear el Trafico')
-                print(' * End: ',contador_end,' Rec: ',contador_receiver)
-                answer = {}
-                answer['Error'] = 'Failed to Create Traffic'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
-                return(answer)
-                break
-        
-
-        #Comprobar que los archivos  generados están completos para seguir con la ejecución 
-        print(' * Comprobando Archivos Generados...')
-        conta = 0
-        temporal_file_list_server= []
-        while conta < name_files_server_size:
-            for server_file in name_files_server:
-                read_file = open(str(server_file)+'.json').read()
-                if read_file == '':
-                    pass
-                else :
-                    try:
-
-                        json_temporal_file = json.loads(read_file);
-                    except:
-                        print(' * Non-Existent File: ',server_file)
-                        pass
-                    
-                    if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                        if str(server_file) in temporal_file_list_server:
-                            pass
-                        else:
-                            temporal_file_list_server.append(str(server_file))
-                            conta += 1
-                    else:
-                        pass
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer   
-
-        time.sleep(1)
-
-        #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
-        print(' * Leyendo Resultados de los Clientes...')
-        for name in name_files:
-            try: 
-                archive_json = json.loads(open(str(name)+'.json').read())
-                dict_data_traffic[str(name)] = archive_json
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer 
-            except:
-                print(' * File Error: ', str(name))
-                answer = {}
-                answer['Error'] = 'Failed to Read Client Traffic'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
-        #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
-        print(' * Leyendo Resultados de los Servidores...')
-        for name_server in name_files_server:
-            try:
-                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
-                dict_data_traffic_server[str(name_server)] = archive_json_server
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer 
-            except:
-                print(' * File Error: ', str(name_server))
-                answer = {}
-                answer['Error'] = 'Failed to Read Server Traffic'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
-
-        #Diccionario que almacena la respueta para Django
-        traffic = {}
-        #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
-        print(' * Generando Salida de los Servidores...')
-        try:
-            for name_server in name_files_server:
-                connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
-
-                #datos del host que actua como transmisor
-                local_host = connected['local_host']
-                local_port = connected['local_port']
-
-                #datos del host que actua como servidor
-                #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
-                #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
-
-                #datos de los parámetros del tráfico en la red
-                tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
-                sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
-                sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
-                rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
-
-                #datos del inicio del Test
-                protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
-                blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
-                omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
-                duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
-                num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
-                blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
-
-                rang = 1
-                
-                intervals = dict_data_traffic_server[str(name_server)]['intervals']
-                #print(intervals)
-                times = {}
-                data_speciffic= {}
-                number_of_intervals = len(intervals)
-
-                for t in range(int(number_of_intervals)):
-                    streams = intervals[t]['streams'][0]
-                    start = streams['start']
-                    end = streams['end']
-                    n_bytes = streams['bytes']
-                    bits_per_second = streams['bits_per_second']
-                    omitted = streams['omitted']
-                    sender = streams['sender']
-
-                    data_speciffic['start'] = start
-                    data_speciffic['end'] = end
-                    data_speciffic['n_bytes'] = n_bytes
-                    data_speciffic['bits_per_second'] = bits_per_second
-                    data_speciffic['omitted'] = str(omitted)
-                    data_speciffic['sender'] = str(sender)
-
-                    times['t_'+str(t)] = data_speciffic
-                    data_speciffic = {}
-
-                data_gen['local_host'] = local_host
-                data_gen['local_port'] = local_port
-                #data_gen['remote_host'] = remote_host
-                #data_gen['remote_port'] = remote_port
-                data_gen['tcp_mss_default'] = tcp_mss_default
-                data_gen['sock_bufsize'] = sock_bufsize
-                data_gen['sndbuf_actual'] = sndbuf_actual
-                data_gen['rcvbuf_actual'] = rcvbuf_actual
-                data_gen['protocol'] = protocol
-                data_gen['blksize'] = blksize
-                data_gen['omit'] = omit
-                data_gen['duration'] = duration
-                data_gen['num_bytes'] = num_bytes
-                data_gen['blocks'] = blocks
-                procces_data['speciffic'] = times
-                procces_data['general']= data_gen
-                traffic[str(name_server)] = procces_data
-                data_gen= {}
-                times = {}
-                procces_data = {}
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer 
-
-            name_files_server = []
-        except:
-            print(' * Error: ',name_server,' - ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Generate Output Server Traffic'
-            tend = time.time()
-            totaltime = tend - tstart
-            print(' * Tiempo de Ejecucion: ',totaltime)
-            print(' * Proceso Finalizado...')
-            return(answer)
-        #Carga los archivos a un diccionario para la respuesta del servidor a Django
-        print(' * Generando Salida de los Clientes...')
-        try:
-            for name in name_files:
-                
-                connected = dict_data_traffic[str(name)]['start']['connected'][0]
-                #print('tipo: ', type(connected))
-
-                #datos del host que actua como transmisor
-                local_host = connected['local_host']
-                local_port = connected['local_port']
-
-                #datos del host que actua como servidor
-                remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
-                remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
-
-                #datos de los parámetros del tráfico en la red
-                tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
-                sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
-                sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
-                rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
-
-                #datos del inicio del Test
-                protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
-                blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
-                omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
-                duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
-                num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
-                blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
-                    
-                #Resultados del Tráfico generado
-                rang = int(time_e)/int(interval)
-                intervals = dict_data_traffic[str(name)]['intervals']
-                times = {}
-                data_speciffic= {}
-                number_of_intervals = len(intervals)
-                for t in range(int(number_of_intervals)):
-                    streams = intervals[t]['streams'][0]
-                    start = streams['start']
-                    end = streams['end']
-                    n_bytes = streams['bytes']
-                    bits_per_second = streams['bits_per_second']
-                    retransmits = streams['retransmits']
-                    snd_cwnd = streams['snd_cwnd']
-                    rtt = streams['rtt']
-                    rttvar = streams['rttvar']
-                    pmtu = streams['pmtu']
-                    omitted = streams['omitted']
-                    sender = streams['sender']
-
-                    data_speciffic['start'] = start
-                    data_speciffic['end'] = end
-                    data_speciffic['n_bytes'] = n_bytes
-                    data_speciffic['bits_per_second'] = bits_per_second
-                    data_speciffic['retransmits'] = retransmits
-                    data_speciffic['snd_cwnd'] = snd_cwnd
-                    data_speciffic['rtt'] = rtt
-                    data_speciffic['rttvar'] = rttvar
-                    data_speciffic['pmtu'] = pmtu
-                    data_speciffic['omitted'] = str(omitted)
-                    data_speciffic['sender'] = str(sender)
-
-                    times['t_'+str(t)] = data_speciffic
-                    data_speciffic = {}
-
-                data_gen['local_host'] = local_host
-                data_gen['local_port'] = local_port
-                data_gen['remote_host'] = remote_host
-                data_gen['remote_port'] = remote_port
-                data_gen['tcp_mss_default'] = tcp_mss_default
-                data_gen['sock_bufsize'] = sock_bufsize
-                data_gen['sndbuf_actual'] = sndbuf_actual
-                data_gen['rcvbuf_actual'] = rcvbuf_actual
-                data_gen['protocol'] = protocol
-                data_gen['blksize'] = blksize
-                data_gen['omit'] = omit
-                data_gen['duration'] = duration
-                data_gen['num_bytes'] = num_bytes
-                data_gen['blocks'] = blocks
-                procces_data['speciffic'] = times
-                procces_data['general']= data_gen
-                
-                traffic[str(name)] = procces_data
-                data_gen= {}
-                times = {}
-                procces_data = {}
-
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer 
-        except:
-            print(' * Error: ',name,' - ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Generate Output Server Traffic'
-            tend = time.time()
-            totaltime = tend - tstart
-            print(' * Tiempo de Ejecucion: ',totaltime)
-            print(' * Proceso Finalizado...')
-            return(answer)
-
-        name_files = []
-        tend = time.time()
-        totaltime = tend - tstart
-        print(' * Tiempo de Ejecucion: ',totaltime)
-        print(' * Proceso Finalizado...')
-        return traffic
-
     elif('specific' in json_data):
-        pass
-    elif('xtreme' in json_data):
-        pass
-
-
-# Se activa el trafico en un Cliente y el siguienbte espera a que acabe para iniciar el trafico del siguiente Cliente
-def tcp_one_for_all_traffic_mode():
-    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port
-    if('global' in json_data):
-        print(' * One for All : TCP')
-        host_size= (len(host_added))-1
-        port_list =[]
-        initial_port = 5000
-        # Tiempo : t , Intervalo : i, Numero Bytes: n, Ancho de Banda: b,   Ventana: w, Tamaño bloque: l
-        #Datos del modo de transmision
-        time_e = str('0') #t
-        number = '0k'#n
-        block = '0k' #k -no used
-        interval = str(1) #i
-        window = '500k' #w
-        length = '1m' #l
-        bw = '1k' # b
-        traffic_mode = ''
-        wait_time = 1
-        dict_data_traffic = {}
-        dict_data_traffic_server = {}
-        file_traffic= []
-        data_traffic={}
-        procces_data={}
-        data_gen= {}
-        list_validation = []
-
-        #Lista de Puertos
-        for pt in range(host_size):
-            initial_port = initial_port + 1
-            port_list.append(str(initial_port))
-
+        print(' * TCP - Specific Mode')
         #Se colocan los host como servidor en el puerto indicado
+        if(serversEnabled == True):
+            try:
+                print(' * Reiniciando el Servicio iperf3...')
+                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+
+                if machine_condition_checker() == True:
+                    print(' * Error: Límite de Memoria Alcanzado')
+                    answer = {}
+                    answer['Error'] = 'Memory Limit Reached'
+                    tend = time.time()
+                    totaltime = tend - tstart
+                    print(' * Tiempo de Ejecución: ',totaltime)
+                    print(' * Proceso Finalizado...')
+                    return answer    
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Reload Iperf3'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecución: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer
+        # Reconocimiento de los host a quienes se le generará tráfico
+        host_as_server = json_data['specific'][0]['host_server']
+        host_as_client = json_data['specific'][0]['host_client']
+
+        for host_server in host_added:
+            port = initial_port
+            if (str(host_server) == str(host_as_server)):
+                host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json')
+                time.sleep(0.5)
+                name_files_server.append(str(host_as_server)+'_'+str(port))    
+                aux = [host_server, port]
+                aux_array.append(aux)
+
+        serversEnabled = True 
+        for host_client in host_added:
+            port = initial_port
+            if (str(host_client) == str(host_as_client)):
+                # Variable que contiene las ejecuciones quedebe tomar Iperf3
+                trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
+                # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
+                order = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
+                # Se genera la orden con la lectura del diccionario del trafico
+                for t in trafico:
+                    orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
+                #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
+                orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
+                #  Se Carga la orden al host Cliente
+                host_client.cmd(orden)
+                # Creacion de Validadores Futuros
+                name_files.append(str(host_client)+'_'+str(server[0]))
+                element_to_validate = []
+                element_to_validate.append(host_as_client)
+                element_to_validate.append(host_as_server)
+                element_to_validate.append(port)
+                list_validation.append(element_to_validate)
+    elif('xtreme' in json_data):
+        print(' * TCP - Xtreme Mode')
         if(serversEnabled == True):
             try:
                 print(' * Reiniciando el Servicio iperf3...')
@@ -1904,1318 +530,446 @@ def tcp_one_for_all_traffic_mode():
                     answer['Error'] = 'Memory Limit Reached'
                     tend = time.time()
                     totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
+                    print(' * Tiempo de Ejecución: ',totaltime)
                     print(' * Proceso Finalizado...')
-                    return answer 
+                    return answer    
             except:
-                print(' * Error:', sys.exc_info()[0])
+                print(' * Error: ', sys.exc_info()[0])
                 answer = {}
-                answer['Error'] = 'Failed to Reload Iperf'
+                answer['Error'] = 'Failed to Reload Iperf3'
                 tend = time.time()
                 totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Tiempo de Ejecución: ',totaltime)
                 print(' * Proceso Finalizado...')
-                return(answer)
-           
-        print(' * Estableciendo Servidores...')
-        for host_server in host_added:
-            for port in port_list:
-                try:
-                    host_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_server)+'_'+str(port)+'.json'+' &')
-                    time.sleep(0.5)
-                    name_files_server.append(str(host_server)+'_'+str(port))
-                    aux = [host_server, port]
-                    aux_array.append(aux)
-                    if machine_condition_checker() == True:
-                        print(' * Error: Límite de Memoria Alcanzado')
-                        answer = {}
-                        answer['Error'] = 'Memory Limit Reached'
-                        tend = time.time()
-                        totaltime = tend - tstart
-                        print(' * Tiempo de Ejecucion: ',totaltime)
-                        print(' * Proceso Finalizado...')
-                        return answer 
-                except:
-                    print('Error: ', sys.exc_info()[0])
-                    answer = {}
-                    answer['Error'] = 'Failed to Create Servers'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print('Tiempo de Ejecucion: ',totaltime)
-                    print('Proceso Finalizado...')
-                    return(answer)
-
-        serversEnabled = True
-        time.sleep(1)
-        buffer_server = []
-
-        print(' * Escablaciendo Clientes...')
-        size_host_added = len(host_added)
-        size_server = len(aux_array)
-        size_port = len(port_list)
+                
         try:
-            for server in aux_array:
-                for host_client in host_added:
-                    if not (str(host_client)+'_'+str(server[0])) in buffer_server:
-                        if not str(server) in buffer_server:
-                            if str(server[0]) == str(host_client):
-                                pass
-                            else:
-                                #Posibles casos de parametrizacion del Trafico en Iperf3.1
-                                # Solo Tiempo
-                                if('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer 
-                                # Solo Tiempo e Intervalo
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e Ancho de banda
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e tamaño bloque
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo y ventana
-                                elif('t' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    traffic_mode = 't-w'
-                                    time_e = str(json_data['t'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e intervalo e ancho de bnda
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e intervalo e ventana
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    window =  str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e intervalo e tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    length =  str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                            # Solo Tiempo e intervalo e ancho de banda e ventana
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e intervalo e ancho de banda e tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Tiempo e intervalo e ancho de banda e ventana y tamaño bloque
-                                elif('t' in json_data and ('i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    time_e = str(json_data['t'])
-                                    interval = str(json_data['i'])
-                                    bw =  str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -t '+time_e+' -i '+interval+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Ventana
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Ancho de banda
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Ventana
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    window = str(json_data['w'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -w '+window+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    length = str(json_data['l'])
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -l '+length+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - ventana
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Intervalo - Número de Bytes - Ancho de banda - Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and ('i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    interval = str(json_data['i'])
-                                    bw = str(json_data['b'])
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -i '+interval+' -b '+bw+' -n '+number+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -J>'+str(host_client)+'_'+str(server[0])+'.json'+' &')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes - Ancho de banda
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes - Ancho de Banda - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                            # Solo Número de Bytes - Ancho de Banda - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Número de Bytes - Ancho de Banda - Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and ('n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    number = str(json_data['n'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -n '+number+' -b '+bw+' -l '+length+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ancho de Banda
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and (not 'l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ancho de Banda - Ventana
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ancho de Banda - Tmaño Bloque 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    bw = str(json_data['b'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -b '+bw+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ancho de Banda - Ventana - Tmaño Bloque 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and ('b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    length = str(json_data['l'])
-                                    bw = str(json_data['b'])
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -b '+bw+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ventana 
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and (not 'l' in json_data)):
-                                    window = str(json_data['w'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Solo Ventana - Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and ('w' in json_data) and ('l' in json_data)):
-                                    window = str(json_data['w'])
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -w '+window+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-                                # Tamaño Bloque
-                                elif(not 't' in json_data and (not 'i' in json_data) and (not 'n' in json_data) and (not 'b' in json_data) and (not 'w' in json_data) and ('l' in json_data)):
-                                    length = str(json_data['l'])
-                                    host_client.cmd('iperf3 -c '+str(server[0].IP())+' -p '+str(server[1])+' -l '+length+' -J>'+str(host_client)+'_'+str(server[0])+'.json')
-                                    temp = str(host_client)+'_'+str(server[0])
-                                    ax = str(server)
-                                    buffer_server.append(temp)
-                                    buffer_server.append(ax)
-                                    name_files.append(str(host_client)+'_'+str(server[0]))
-                                    element_to_validate = []
-                                    element_to_validate.append(host_client)
-                                    element_to_validate.append(server[0])
-                                    element_to_validate.append(server[1])
-                                    list_validation.append(element_to_validate)
-                                    if machine_condition_checker() == True:
-                                        print(' * Error: Límite de Memoria Alcanzado')
-                                        answer = {}
-                                        answer['Error'] = 'Memory Limit Reached'
-                                        tend = time.time()
-                                        totaltime = tend - tstart
-                                        print(' * Tiempo de Ejecucion: ',totaltime)
-                                        print(' * Proceso Finalizado...')
-                                        return answer
-
+            print(' * Estableciendo Servidores...')
+            port = initial_port
+            host_as_client = host_added[0];
+            host_as_server = host_added[len(host_added-1)]
+            port = initial_port
+            host_as_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json')
+            time.sleep(0.5)
         except:
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
-            answer['Error'] = 'Failed to Create Clients'
+            answer['Error'] = 'Failed to Create Server'
             tend = time.time()
             totaltime = tend - tstart
-            print(' * Tiempo de Ejecucion: ',totaltime)
-            print( * 'Proceso Finalizado...')
-            return(answer)
+            print(' * Tiempo de Ejecución: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return answer
 
-        time.sleep(1);
-        contador_end = 0
-        contador_receiver = 0
-        count = 0;
-        list_end = []
-        list_receiver = []
-        name_files_size = len(name_files)
-        name_files_server_size = len(name_files_server)
-        temporal_file_list = []
-        traffic_incomplete = True
+            name_files_server.append(str(host_as_server)+'_'+str(port))    
+            aux = [host_as_server, port]
+            aux_array.append(aux)
+            # Variable que contiene las ejecuciones quedebe tomar Iperf3
+            trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
+            # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
+            order = 'iperf3 -c '+str(host_as_server.IP())+' -p '+str(port)+' '
+            # Se genera la orden con la lectura del diccionario del trafico
+            for t in trafico:
+                orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
+            #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
+            orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
+            #  Se Carga la orden al host Cliente
+            host_as_client.cmd(orden)
+            # Creación de Validadores Futuros
+            temp = str(host_as_client)+'_'+str(host_as_server)
+            name_files.append(str(host_client)+'_'+str(server[0]))
+            element_to_validate = []
+            element_to_validate.append(host_client)
+            element_to_validate.append(server[0])
+            element_to_validate.append(server[1])
+            list_validation.append(element_to_validate)
 
-        print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
 
-        print(" * Generando Tráfico...")
-        while traffic_incomplete:
-            for element in list_validation:
-                file_name = r''+str(element[0])+'_'+str(element[1])+'.json'
-                # Si el archivo existe lo lee y revisa si esta completo
-                if os.path.exists(file_name):
-                    read_file = open(file_name).read()
-                    if read_file == '':
-                        pass
-                    else:
-                        try:
-                            json_temporal_file = json.loads(read_file)
-                        
-                            if 'end' in json_temporal_file :
-                                if element in list_end:
-                                    pass
-                                else:
-                                    list_end.append(element)
-                                    contador_end += 1
-                            if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                                if element in list_receiver:
-                                    pass
-                                else:
-                                    list_receiver.append(element)
-                                    contador_receiver += 1
-                        except:
-                            pass
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
-                # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
-                else:
-                    reset_traffic(element[0], element[1], element[2])
-             
-            if contador_receiver == name_files_size and contador_end == contador_receiver :
-                print('end: ',contador_end,' rec: ',contador_receiver)
-                traffic_incomplete = False
-                break      
-            elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
-                print(' * Error: Imposible Crear Tráfico')
-                print('end: ',contador_end,' rec: ',contador_receiver)
-                answer = {}
-                answer['Error'] = 'Failed to Create Traffic'
-                tend = time.time()
-                totaltime = tend - tstart
-                print('Tiempo de Ejecucion: ',totaltime)
-                print('Proceso Finalizado...')
-                return(answer)
-                break
-        
+    
+    
+    time.sleep(1);
+    contador_end = 0
+    contador_receiver = 0
+    count = 0;
+    list_end = []
+    list_receiver = []
+    name_files_size = len(name_files)
+    name_files_server_size = len(name_files_server)
+    temporal_file_list = []
+    traffic_incomplete = True
 
-        #Comprobar que los archivos  generados están completos para seguir con la ejecución 
-        print(' * Comprobando Archivos Generados...')
-        conta = 0
-        temporal_file_list_server= []
-        while conta < name_files_server_size:
-            for server_file in name_files_server:
-                try:
-                    read_file = open(str(server_file)+'.json').read()
-                except:
-                    pass
+    print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
+
+    if (name_files_size != name_files_server_size):
+        print(' * Error: Ejecución no Lograda')
+        answer = {}
+        answer['Error'] = 'Bad Execution'
+        tend = time.time()
+        totaltime = tend - tstart
+        print(' * Tiempo de Ejecución: ',totaltime)
+        print(' * Proceso Finalizado...')
+        return answer 
+
+    print(" * Generando Tráfico...")
+    while traffic_incomplete:
+        for element in list_validation:
+            file_name = r''+str(element[0])+'_'+str(element[1])+'.json'
+            # Si el archivo existe lo lee y revisa si esta completo
+            if os.path.exists(file_name):
+                read_file = open(file_name).read()
                 if read_file == '':
                     pass
-                else :
+                else:
                     try:
-
-                        json_temporal_file = json.loads(read_file);
-                    except:
-                        print('Non-Exist File:',server_file)
-                        pass
+                        json_temporal_file = json.loads(read_file)
                     
-                    if 'receiver_tcp_congestion' in json_temporal_file['end']:
-                        if str(server_file) in temporal_file_list_server:
-                            pass
-                        else:
-                            temporal_file_list_server.append(str(server_file))
-                            conta += 1
-                    else:
+                        if 'end' in json_temporal_file :
+                            if element in list_end:
+                                pass
+                            else:
+                                list_end.append(element)
+                                contador_end += 1
+                        if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                            if element in list_receiver:
+                                pass
+                            else:
+                                list_receiver.append(element)
+                                contador_receiver += 1
+                    except:
                         pass
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
+            # Si el archivo no existe que reinicie el trafico, creandolo de nuevo en ese par Cliente-Servidor
+            else:
+                reset_traffic(element[0], element[1], element[2])
 
-        time.sleep(1)
-
-        #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
-        print(' * Leyendo Resultados de los Clientes...')
-        for name in name_files:
-            try:
-                archive_json = json.loads(open(str(name)+'.json').read())
-                dict_data_traffic[str(name)] = archive_json
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
-            except:
-                print(' * File Error: ', name)
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
                 answer = {}
-                answer['Error'] = 'Failed to Read Clients'
+                answer['Error'] = 'Memory Limit Reached'
                 tend = time.time()
                 totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Tiempo de Ejecución: ',totaltime)
                 print(' * Proceso Finalizado...')
-                return(answer)
-
-        #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
-        print(' * Leyendo Resultados de los Servidores...')
-        for name_server in name_files_server:            
-            try:
-                archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
-                dict_data_traffic_server[str(name_server)] = archive_json_server
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
-            except:
-                print(' * File Error: ', name_server)
-                answer = {}
-                answer['Error'] = 'Failed to Read Clients'
-                tend = time.time()
-                totaltime = tend - tstart
-                print(' * Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer) 
-
-        #Diccionario que almacena la respueta para Django
-        traffic = {}
-        #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
-        print(' * Generando Salida de los Servidores...')
-        try:
-            for name_server in name_files_server:
-                connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
-
-                #datos del host que actua como transmisor
-                local_host = connected['local_host']
-                local_port = connected['local_port']
-
-                #datos del host que actua como servidor
-                #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
-                #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
-
-                #datos de los parámetros del tráfico en la red
-                tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
-                sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
-                sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
-                rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
-
-                #datos del inicio del Test
-                protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
-                blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
-                omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
-                duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
-                num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
-                blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
-
-                rang = 1
-                
-                intervals = dict_data_traffic_server[str(name_server)]['intervals']
-                #print(intervals)
-                times = {}
-                data_speciffic= {}
-                number_of_intervals = len(intervals)
-
-                for t in range(int(number_of_intervals)):
-                    streams = intervals[t]['streams'][0]
-                    start = streams['start']
-                    end = streams['end']
-                    n_bytes = streams['bytes']
-                    bits_per_second = streams['bits_per_second']
-                    omitted = streams['omitted']
-                    sender = streams['sender']
-
-                    data_speciffic['start'] = start
-                    data_speciffic['end'] = end
-                    data_speciffic['n_bytes'] = n_bytes
-                    data_speciffic['bits_per_second'] = bits_per_second
-                    data_speciffic['omitted'] = str(omitted)
-                    data_speciffic['sender'] = str(sender)
-
-                    times['t_'+str(t)] = data_speciffic
-                    data_speciffic = {}
-
-                data_gen['local_host'] = local_host
-                data_gen['local_port'] = local_port
-                #data_gen['remote_host'] = remote_host
-                #data_gen['remote_port'] = remote_port
-                data_gen['tcp_mss_default'] = tcp_mss_default
-                data_gen['sock_bufsize'] = sock_bufsize
-                data_gen['sndbuf_actual'] = sndbuf_actual
-                data_gen['rcvbuf_actual'] = rcvbuf_actual
-                data_gen['protocol'] = protocol
-                data_gen['blksize'] = blksize
-                data_gen['omit'] = omit
-                data_gen['duration'] = duration
-                data_gen['num_bytes'] = num_bytes
-                data_gen['blocks'] = blocks
-                procces_data['speciffic'] = times
-                procces_data['general']= data_gen
-                traffic[str(name_server)] = procces_data
-                data_gen= {}
-                times = {}
-                procces_data = {}
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
-        except:
-            print(' * Error: ',name_server, ' - ' ,sys.exc_info()[0])
+                return answer   
+        
+        
+        # Si el numero de end es igual an de la clave de end['receiver_tcp_congestion'] el trafico fue exitoso
+        if contador_receiver == name_files_size and contador_end == contador_receiver :
+            print(' * End: ',contador_end,' Rec: ',contador_receiver) 
+            traffic_incomplete = False
+            break      
+        elif (contador_end  == name_files_size and contador_receiver < contador_end) or (contador_end  == name_files_size and contador_receiver > contador_end) :
+            print(' * Error: ', 'Imposible Crear el Tráfico')
+            print(' * End: ',contador_end,' Rec: ',contador_receiver)
             answer = {}
-            answer['Error'] = 'Failed to Genereate Output Server'
+            answer['Error'] = 'Failed to Create Traffic'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecución: ',totaltime)
+            print(' * Proceso Finalizado...')
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+            return(answer)
+            break
+    
+    #Comprobar que los archivos  generados están completos para seguir con la ejecución 
+    print(' * Comprobando Archivos Generados...')
+    conta = 0
+    temporal_file_list_server= []
+    while conta < name_files_server_size:
+        for server_file in name_files_server:
+            read_file = open(str(server_file)+'.json').read()
+            if read_file == '':
+                pass
+            else :
+                try:
+
+                    json_temporal_file = json.loads(read_file);
+                except:
+                    print(' * Non-Existent File: ',server_file)
+                    pass
+                
+                if 'receiver_tcp_congestion' in json_temporal_file['end']:
+                    if str(server_file) in temporal_file_list_server:
+                        pass
+                    else:
+                        temporal_file_list_server.append(str(server_file))
+                        conta += 1
+                else:
+                    pass
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
+                answer = {}
+                answer['Error'] = 'Memory Limit Reached'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer
+    
+    #Abre el archivo correspondiente al trafico de los clientes y lo pasa a Dict
+    print(' * Leyendo Resultados de los Clientes...')
+    for name in name_files:
+        try: 
+            archive_json = json.loads(open(str(name)+'.json').read())
+            dict_data_traffic[str(name)] = archive_json
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
+                answer = {}
+                answer['Error'] = 'Memory Limit Reached'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer 
+        except:
+            print(' * File Error: ', str(name))
+            answer = {}
+            answer['Error'] = 'Failed to Read Client Traffic'
             tend = time.time()
             totaltime = tend - tstart
             print(' * Tiempo de Ejecucion: ',totaltime)
             print(' * Proceso Finalizado...')
             return(answer)
+    
+    #Abre el archivo correspondiente al trafico de los servidores y lo pasa a Dict
+    print(' * Leyendo Resultados de los Servidores...')
+    for name_server in name_files_server:
+        try:
+            archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
+            dict_data_traffic_server[str(name_server)] = archive_json_server
+            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
+                answer = {}
+                answer['Error'] = 'Memory Limit Reached'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer 
+        except:
+            print(' * File Error: ', str(name_server))
+            answer = {}
+            answer['Error'] = 'Failed to Read Server Traffic'
+            tend = time.time()
+            totaltime = tend - tstart
+            print(' * Tiempo de Ejecucion: ',totaltime)
+            print(' * Proceso Finalizado...')
+            return(answer)
+
+    #Diccionario que almacena la respueta para Django
+    traffic = {}
+    #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
+    print(' * Generando Salida de los Servidores...')
+    try:
+        for name_server in name_files_server:
+            connected = dict_data_traffic_server[str(name_server)]['start']['connected'][0]
+
+            #datos del host que actua como transmisor
+            local_host = connected['local_host']
+            local_port = connected['local_port']
+
+            #datos del host que actua como servidor
+            #remote_host = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['host']
+            #remote_port = dict_data_traffic_server[str(name_server)]['start']['connecting_to']['port']
+
+            #datos de los parámetros del tráfico en la red
+            tcp_mss_default = dict_data_traffic_server[str(name_server)]['start']['tcp_mss_default']
+            sock_bufsize = dict_data_traffic_server[str(name_server)]['start']['sock_bufsize']
+            sndbuf_actual = dict_data_traffic_server[str(name_server)]['start']['sndbuf_actual']
+            rcvbuf_actual = dict_data_traffic_server[str(name_server)]['start']['rcvbuf_actual'] 
+
+            #datos del inicio del Test
+            protocol = dict_data_traffic_server[str(name_server)]['start']['test_start']['protocol']
+            blksize =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blksize']
+            omit =  dict_data_traffic_server[str(name_server)]['start']['test_start']['omit']
+            duration =  dict_data_traffic_server[str(name_server)]['start']['test_start']['duration']
+            num_bytes =  dict_data_traffic_server[str(name_server)]['start']['test_start']['bytes']
+            blocks =  dict_data_traffic_server[str(name_server)]['start']['test_start']['blocks']
+
+            rang = 1
+            
+            intervals = dict_data_traffic_server[str(name_server)]['intervals']
+            #print(intervals)
+            times = {}
+            data_speciffic= {}
+            number_of_intervals = len(intervals)
+
+            for t in range(int(number_of_intervals)):
+                streams = intervals[t]['streams'][0]
+                start = streams['start']
+                end = streams['end']
+                n_bytes = streams['bytes']
+                bits_per_second = streams['bits_per_second']
+                omitted = streams['omitted']
+                sender = streams['sender']
+
+                data_speciffic['start'] = start
+                data_speciffic['end'] = end
+                data_speciffic['n_bytes'] = n_bytes
+                data_speciffic['bits_per_second'] = bits_per_second
+                data_speciffic['omitted'] = str(omitted)
+                data_speciffic['sender'] = str(sender)
+
+                times['t_'+str(t)] = data_speciffic
+                data_speciffic = {}
+
+            data_gen['local_host'] = local_host
+            data_gen['local_port'] = local_port
+            #data_gen['remote_host'] = remote_host
+            #data_gen['remote_port'] = remote_port
+            data_gen['tcp_mss_default'] = tcp_mss_default
+            data_gen['sock_bufsize'] = sock_bufsize
+            data_gen['sndbuf_actual'] = sndbuf_actual
+            data_gen['rcvbuf_actual'] = rcvbuf_actual
+            data_gen['protocol'] = protocol
+            data_gen['blksize'] = blksize
+            data_gen['omit'] = omit
+            data_gen['duration'] = duration
+            data_gen['num_bytes'] = num_bytes
+            data_gen['blocks'] = blocks
+            procces_data['speciffic'] = times
+            procces_data['general']= data_gen
+            traffic[str(name_server)] = procces_data
+            data_gen= {}
+            times = {}
+            procces_data = {}
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
+                answer = {}
+                answer['Error'] = 'Memory Limit Reached'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer 
 
         name_files_server = []
-        #Carga los archivos a un diccionario para la respuesta del servidor a Django
-        print(' * Generando Salida de los Clientes...')
-        try:
-            for name in name_files:
-                
-                connected = dict_data_traffic[str(name)]['start']['connected'][0]
-                #print('tipo: ', type(connected))
-
-                #datos del host que actua como transmisor
-                local_host = connected['local_host']
-                local_port = connected['local_port']
-
-                #datos del host que actua como servidor
-                remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
-                remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
-
-                #datos de los parámetros del tráfico en la red
-                tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
-                sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
-                sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
-                rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
-
-                #datos del inicio del Test
-                protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
-                blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
-                omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
-                duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
-                num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
-                blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
-                    
-                #Resultados del Tráfico generado
-                rang = int(time_e)/int(interval)
-                intervals = dict_data_traffic[str(name)]['intervals']
-                times = {}
-                data_speciffic= {}
-                number_of_intervals = len(intervals)
-                for t in range(int(number_of_intervals)):
-                    streams = intervals[t]['streams'][0]
-                    start = streams['start']
-                    end = streams['end']
-                    n_bytes = streams['bytes']
-                    bits_per_second = streams['bits_per_second']
-                    retransmits = streams['retransmits']
-                    snd_cwnd = streams['snd_cwnd']
-                    rtt = streams['rtt']
-                    rttvar = streams['rttvar']
-                    pmtu = streams['pmtu']
-                    omitted = streams['omitted']
-                    sender = streams['sender']
-
-                    data_speciffic['start'] = start
-                    data_speciffic['end'] = end
-                    data_speciffic['n_bytes'] = n_bytes
-                    data_speciffic['bits_per_second'] = bits_per_second
-                    data_speciffic['retransmits'] = retransmits
-                    data_speciffic['snd_cwnd'] = snd_cwnd
-                    data_speciffic['rtt'] = rtt
-                    data_speciffic['rttvar'] = rttvar
-                    data_speciffic['pmtu'] = pmtu
-                    data_speciffic['omitted'] = str(omitted)
-                    data_speciffic['sender'] = str(sender)
-
-                    times['t_'+str(t)] = data_speciffic
-                    data_speciffic = {}
-
-                data_gen['local_host'] = local_host
-                data_gen['local_port'] = local_port
-                data_gen['remote_host'] = remote_host
-                data_gen['remote_port'] = remote_port
-                data_gen['tcp_mss_default'] = tcp_mss_default
-                data_gen['sock_bufsize'] = sock_bufsize
-                data_gen['sndbuf_actual'] = sndbuf_actual
-                data_gen['rcvbuf_actual'] = rcvbuf_actual
-                data_gen['protocol'] = protocol
-                data_gen['blksize'] = blksize
-                data_gen['omit'] = omit
-                data_gen['duration'] = duration
-                data_gen['num_bytes'] = num_bytes
-                data_gen['blocks'] = blocks
-                procces_data['speciffic'] = times
-                procces_data['general']= data_gen
-                
-                traffic[str(name)] = procces_data
-                data_gen= {}
-                times = {}
-                procces_data = {}
-
-                if machine_condition_checker() == True:
-                    print(' * Error: Límite de Memoria Alcanzado')
-                    answer = {}
-                    answer['Error'] = 'Memory Limit Reached'
-                    tend = time.time()
-                    totaltime = tend - tstart
-                    print(' * Tiempo de Ejecucion: ',totaltime)
-                    print(' * Proceso Finalizado...')
-                    return answer
-        except:
-            print(' * Error: ', name ,' - ' , sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Generate Output Client'
-            tend = time.time()
-            totaltime = tend - tstart
-            print(' * Tiempo de Ejecucion: ',totaltime)
-            print(' * Proceso Finalizado...')
-            return(answer)
-
-        name_files = []
+    except:
+        print(' * Error: ',name_server,' - ', sys.exc_info()[0])
+        answer = {}
+        answer['Error'] = 'Failed to Generate Output Server Traffic'
         tend = time.time()
         totaltime = tend - tstart
         print(' * Tiempo de Ejecucion: ',totaltime)
         print(' * Proceso Finalizado...')
-        return traffic
-        
+        return(answer)
+    #Carga los archivos a un diccionario para la respuesta del servidor a Django
+    print(' * Generando Salida de los Clientes...')
+    try:
+        for name in name_files:
+            
+            connected = dict_data_traffic[str(name)]['start']['connected'][0]
+            #print('tipo: ', type(connected))
 
-    elif('specific' in json_data):
-        pass
-    elif('xtreme' in json_data):
-        pass
+            #datos del host que actua como transmisor
+            local_host = connected['local_host']
+            local_port = connected['local_port']
 
+            #datos del host que actua como servidor
+            remote_host = dict_data_traffic[str(name)]['start']['connecting_to']['host']
+            remote_port = dict_data_traffic[str(name)]['start']['connecting_to']['port']
 
-#Caca y Popo
+            #datos de los parámetros del tráfico en la red
+            tcp_mss_default = dict_data_traffic[str(name)]['start']['tcp_mss_default']
+            sock_bufsize = dict_data_traffic[str(name)]['start']['sock_bufsize']
+            sndbuf_actual = dict_data_traffic[str(name)]['start']['sndbuf_actual']
+            rcvbuf_actual = dict_data_traffic[str(name)]['start']['rcvbuf_actual'] 
 
+            #datos del inicio del Test
+            protocol = dict_data_traffic[str(name)]['start']['test_start']['protocol']
+            blksize =  dict_data_traffic[str(name)]['start']['test_start']['blksize']
+            omit =  dict_data_traffic[str(name)]['start']['test_start']['omit']
+            duration =  dict_data_traffic[str(name)]['start']['test_start']['duration']
+            num_bytes =  dict_data_traffic[str(name)]['start']['test_start']['bytes']
+            blocks =  dict_data_traffic[str(name)]['start']['test_start']['blocks']
+                
+            #Resultados del Tráfico generado
+            intervals = dict_data_traffic[str(name)]['intervals']
+            times = {}
+            data_speciffic= {}
+            number_of_intervals = len(intervals)
+            for t in range(int(number_of_intervals)):
+                streams = intervals[t]['streams'][0]
+                start = streams['start']
+                end = streams['end']
+                n_bytes = streams['bytes']
+                bits_per_second = streams['bits_per_second']
+                retransmits = streams['retransmits']
+                snd_cwnd = streams['snd_cwnd']
+                rtt = streams['rtt']
+                rttvar = streams['rttvar']
+                pmtu = streams['pmtu']
+                omitted = streams['omitted']
+                sender = streams['sender']
+
+                data_speciffic['start'] = start
+                data_speciffic['end'] = end
+                data_speciffic['n_bytes'] = n_bytes
+                data_speciffic['bits_per_second'] = bits_per_second
+                data_speciffic['retransmits'] = retransmits
+                data_speciffic['snd_cwnd'] = snd_cwnd
+                data_speciffic['rtt'] = rtt
+                data_speciffic['rttvar'] = rttvar
+                data_speciffic['pmtu'] = pmtu
+                data_speciffic['omitted'] = str(omitted)
+                data_speciffic['sender'] = str(sender)
+
+                times['t_'+str(t)] = data_speciffic
+                data_speciffic = {}
+
+            data_gen['local_host'] = local_host
+            data_gen['local_port'] = local_port
+            data_gen['remote_host'] = remote_host
+            data_gen['remote_port'] = remote_port
+            data_gen['tcp_mss_default'] = tcp_mss_default
+            data_gen['sock_bufsize'] = sock_bufsize
+            data_gen['sndbuf_actual'] = sndbuf_actual
+            data_gen['rcvbuf_actual'] = rcvbuf_actual
+            data_gen['protocol'] = protocol
+            data_gen['blksize'] = blksize
+            data_gen['omit'] = omit
+            data_gen['duration'] = duration
+            data_gen['num_bytes'] = num_bytes
+            data_gen['blocks'] = blocks
+            procces_data['speciffic'] = times
+            procces_data['general']= data_gen
+            
+            traffic[str(name)] = procces_data
+            data_gen= {}
+            times = {}
+            procces_data = {}
+
+            if machine_condition_checker() == True:
+                print(' * Error: Límite de Memoria Alcanzado')
+                answer = {}
+                answer['Error'] = 'Memory Limit Reached'
+                tend = time.time()
+                totaltime = tend - tstart
+                print(' * Tiempo de Ejecucion: ',totaltime)
+                print(' * Proceso Finalizado...')
+                return answer 
+    except:
+        print(' * Error: ',name,' - ', sys.exc_info()[0])
+        answer = {}
+        answer['Error'] = 'Failed to Generate Output Client Traffic'
+        tend = time.time()
+        totaltime = tend - tstart
+        print(' * Tiempo de Ejecucion: ',totaltime)
+        print(' * Proceso Finalizado...')
+        return(answer)
+    
+    name_files = []
+    tend = time.time()
+    totaltime = tend - tstart
+    print(' * Tiempo de Ejecución: ',totaltime)
+    print(' * Proceso Finalizado...')
+    return traffic
+
+# Ejecuta el Trafico UDP en Iperf3 
+def traffic_executor_udp():
+    return 0
 
 if __name__ == '__main__':
-    app.run(debug= True, host='10.55.6.188')
+    app.run(debug= False, host='10.55.6.188')
 
 
