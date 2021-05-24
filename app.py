@@ -33,7 +33,7 @@ link_dict = {}
 port_container = []
 
 tstart = None
-initial_port = 5000
+
 
 linkeados = []
 
@@ -549,9 +549,9 @@ def traffic_executor_tcp():
             print(' * Estableciendo el Servidor...')
             port = initial_port
             host_as_client = host_added[0];
-            host_as_server = host_added[len(host_added-1)]
+            host_as_server = host_added[len(host_added)-1]
             port = initial_port
-            host_as_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json')
+            host_as_server.cmd('iperf3 -s -p '+str(port)+' -J>'+str(host_as_server)+'_'+str(port)+'.json'+' &')
             time.sleep(0.5)
         except:
             print(' * Error: ', sys.exc_info()[0])
@@ -581,7 +581,7 @@ def traffic_executor_tcp():
         temp = str(host_as_client)+'_'+str(host_as_server)
         name_files.append(str(host_as_client)+'_'+str(host_as_server))
         element_to_validate = []
-        element_to_validate.append(host_client)
+        element_to_validate.append(host_as_client)
         element_to_validate.append(host_as_server)
         element_to_validate.append(port)
         list_validation.append(element_to_validate)
