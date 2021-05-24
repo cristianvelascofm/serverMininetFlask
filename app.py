@@ -515,7 +515,7 @@ def traffic_executor_tcp():
                 print(' * Cargando Orden en el Cliente ...')
                 host_client.cmd(orden)
                 # Creacion de Validadores Futuros
-                name_files.append(str(host_client)+'_'+str(server[0]))
+                name_files.append(str(host_client)+'_'+str(host_as_server))
                 element_to_validate = []
                 element_to_validate.append(host_as_client)
                 element_to_validate.append(host_as_server)
@@ -546,7 +546,7 @@ def traffic_executor_tcp():
                 print(' * Proceso Finalizado...')
                 
         try:
-            print(' * Estableciendo Servidores...')
+            print(' * Estableciendo el Servidor...')
             port = initial_port
             host_as_client = host_added[0];
             host_as_server = host_added[len(host_added-1)]
@@ -579,11 +579,11 @@ def traffic_executor_tcp():
         host_as_client.cmd(orden)
         # Creación de Validadores Futuros
         temp = str(host_as_client)+'_'+str(host_as_server)
-        name_files.append(str(host_client)+'_'+str(server[0]))
+        name_files.append(str(host_as_client)+'_'+str(host_as_server))
         element_to_validate = []
         element_to_validate.append(host_client)
-        element_to_validate.append(server[0])
-        element_to_validate.append(server[1])
+        element_to_validate.append(host_as_server)
+        element_to_validate.append(port)
         list_validation.append(element_to_validate)
 
 
