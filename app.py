@@ -17,6 +17,10 @@ from mininet.net import Mininet
 from mininet.node import OVSSwitch, RemoteController
 from mininet.topo import Topo
 
+# Variables app Flask
+app = Flask(__name__)
+cors = CORS(app, resources={r"/*": {"origins": "*"}}) # Acepta dede todas las direcciones con el *
+
 # Create a variable for the elements of topology
 host_group = []
 swithc_group = []
@@ -57,16 +61,9 @@ host_sender = None
 net = Mininet(build=False)
 
 
-app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
-
-
-
 def wireshark_launcher():
     run_wireshark = subprocess.call(['wireshark-gtk', '-S'])
         
-
-
 # Creacion del hilo para lanzar Wireshark
 w = threading.Thread(target=wireshark_launcher,)
 
@@ -153,7 +150,7 @@ def executor():
             answer['Error'] = 'Failed to Send Response'
             tend = time.time()
             totaltime = tend - tstart
-            print('Tiempo de Ejecucion: ',totaltime)
+            print(' * Tiempo de Ejecucion: ',totaltime)
             print(' * Proceso Finalizado...')
             return(answer)
 
@@ -171,7 +168,7 @@ def executor():
             answer['Error'] = 'Failed to Send Response'
             tend = time.time()
             totaltime = tend - tstart
-            print('Tiempo de Ejecucion: ',totaltime)
+            print(' * Tiempo de Ejecucion: ',totaltime)
             print(' * Proceso Finalizado...')
             return(answer)
     else:
@@ -242,7 +239,7 @@ def executor():
             print(' * Links Creados ...')
 
             net.start()
-            print(' * Red Emulada con Exito ...')
+            print(' * Red Emulada con Éxito ...')
 
             at = {}
             at['red'] = 'creada'
@@ -301,7 +298,7 @@ def reset_traffic(host_client, host_server, port):
      # Variable que contiene las ejecuciones quedebe tomar Iperf3
     trafico = json_data['TCP'][0] # Un dicconario con las posibles opciones Iperf3
     # Se crea la orden estableciendo el host como Cliente enviando trafico al host Servidor en el puerto indicado
-    order = 'iperf3 -c '+str(host_server.IP())+' -p '+str(host_server[1])+' '
+    orden = 'iperf3 -c '+str(host_server.IP())+' -p '+str(host_server[1])+' '
     # Se genera la orden con la lectura del diccionario del trafico
     for t in trafico:
         orden = orden+'-'+str(t)+' '+str(trafico[t])+' '
@@ -317,7 +314,8 @@ def reset_traffic(host_client, host_server, port):
 
 # Ejecuta el Trafico TCP en Iperf3 
 def traffic_executor_tcp():
-    global serversEnabled,name_files,name_files_server,json_data, tstart, initial_port    
+    
+    global serversEnabled,name_files,name_files_server,json_data, tstart    
     host_size= (len(host_added))-1
     port_list =[]
     initial_port = 5000
@@ -331,8 +329,9 @@ def traffic_executor_tcp():
     procces_data={}
     data_gen= {}
     list_validation = []
+    
     if('global' in json_data):
-        print(' * All for All : TCP - Global Mode')
+        print(' * TCP - Global Mode')
         #Lista de Puertos
         for pt in range(host_size):
             initial_port = initial_port + 1
@@ -419,9 +418,11 @@ def traffic_executor_tcp():
 
                                     # Crea la orden Completa dependiendo de que modo tenga One for All o ALl for All
                                     if 'all_for_all' in json_data:
+                                        print(' * All for All Mode')
                                         #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que se ejecute en segundo Plano con el '&'
                                         orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'+' &'
                                     elif 'one_for_all' in json_data:
+                                        print(' * One for All Mode')
                                         #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
                                         orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'
                                     #  Se Carga la orden al host Cliente
@@ -576,6 +577,7 @@ def traffic_executor_tcp():
         #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
         orden = orden+'-J>'+str(host_as_client)+'_'+str(host_as_server)+'.json'
         #  Se Carga la orden al host Cliente
+        print(' * Cargando Orden en el Cliente ...')
         host_as_client.cmd(orden)
         # Creación de Validadores Futuros
         temp = str(host_as_client)+'_'+str(host_as_server)
@@ -586,9 +588,10 @@ def traffic_executor_tcp():
         element_to_validate.append(port)
         list_validation.append(element_to_validate)
 
+    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+    #  Esta sección  comprueba y carga la respuesta de Iperf3
+    # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
-    
-    
     time.sleep(1);
     contador_end = 0
     contador_receiver = 0
@@ -602,7 +605,8 @@ def traffic_executor_tcp():
 
     print(' * Clientes: ',name_files_size,' Servidores: ',name_files_server_size)
 
-    if (name_files_size != name_files_server_size):
+    # Si la ejecucion no es correcta suele arrojar ningun archivo en respuesta, tanto en server como en client
+    if (name_files_size != name_files_server_size) or (name_files_size == 0  and  name_files_server_size == 0) :
         print(' * Error: Ejecución no Lograda')
         answer = {}
         answer['Error'] = 'Bad Execution'
@@ -611,7 +615,8 @@ def traffic_executor_tcp():
         print(' * Tiempo de Ejecución: ',totaltime)
         print(' * Proceso Finalizado...')
         return answer 
-
+    
+    # Comprueba los archivos del cliente en la salida hasta que se completen mientras se ejecuta el trafico
     print(" * Generando Tráfico...")
     while traffic_incomplete:
         for element in list_validation:
@@ -672,7 +677,7 @@ def traffic_executor_tcp():
             return(answer)
             break
     
-    #Comprobar que los archivos  generados están completos para seguir con la ejecución 
+    #Comprobar que los archivos  generados en el servidor están completos para seguir con la ejecución 
     print(' * Comprobando Archivos Generados...')
     conta = 0
     temporal_file_list_server= []
@@ -761,7 +766,7 @@ def traffic_executor_tcp():
 
     #Diccionario que almacena la respueta para Django
     traffic = {}
-    #Carga los archivos del cliente a un dict para la respuesta del servidor a Django
+    #Carga los archivos del cliente a un dict para la respuesta del servidor 
     print(' * Generando Salida de los Servidores...')
     try:
         for name_server in name_files_server:
@@ -856,7 +861,7 @@ def traffic_executor_tcp():
         print(' * Tiempo de Ejecucion: ',totaltime)
         print(' * Proceso Finalizado...')
         return(answer)
-    #Carga los archivos a un diccionario para la respuesta del servidor a Django
+    #Carga los archivos a un diccionario para la respuesta del servidor 
     print(' * Generando Salida de los Clientes...')
     try:
         for name in name_files:
