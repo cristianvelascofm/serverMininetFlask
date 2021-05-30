@@ -283,6 +283,7 @@ def reset_variables():
 
 def stopEmulation():
     global net,host_added,switch_added,controller_added,linkeados,tstart
+
     if(len(linkeados) > 0):
         print(" * Borrando Enlaces...")
         for lk in linkeados:
@@ -331,7 +332,7 @@ def stopEmulation():
                 answer['Error'] = 'Failed to Delete Controllers'
                 print(' * Proceso Finalizado...')
                 return(answer)
-                
+
     print(' * Iniciando Secuencia de Parada de la Red en Mininet...')
     try:
         net.stop()
@@ -352,6 +353,7 @@ def stopEmulation():
     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
     os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+    reset_variables()
     return(True)
 
 # Reinicia el Tráfico en un host cliente y un host servidor en particular
