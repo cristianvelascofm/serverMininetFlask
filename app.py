@@ -67,6 +67,75 @@ def wireshark_launcher():
 # Creacion del hilo para lanzar Wireshark
 w = threading.Thread(target=wireshark_launcher,)
 
+def stopEmulation():
+    global net,host_added,switch_added,controller_added,linkeados,tstart
+    print(" * Borrando Enlaces...")
+    for lk in linkeados:
+        try:
+            net.delLink(lk)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Delete Links'
+            print(' * Proceso Finalizado...')
+            return(answer)
+
+    print(' * Borrando Hosts...')
+    for h in host_added:
+        try:
+            h.stop(deleteIntfs=True)
+            net.delHost(h)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Delete Hosts'
+            print(' * Proceso Finalizado...')
+            return(answer)
+
+    print(' * Borrando Switchs...')
+    for s in switch_added:
+        try:
+            s.stop(deleteIntfs=True)
+            net.delSwitch(s)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Delete Switchs'
+            print(' * Proceso Finalizado...')
+            return(answer)
+            
+    print(' * Borrando Controladores...')
+    for c in controller_added:
+        try:
+            net.delController(c)
+        except:
+            print(' * Error: ', sys.exc_info()[0])
+            answer = {}
+            answer['Error'] = 'Failed to Delete Controllers'
+            print(' * Proceso Finalizado...')
+            return(answer)
+    print(' * Iniciando Secuencia de Parada de la Red en Mininet...')
+    try:
+        net.stop()
+    except:
+        print(' * Error: ', sys.exc_info()[0])
+        answer = {}
+        answer['Error'] = 'Failed to Stop Mininet'
+        tend = time.time()
+        totaltime = tend - tstart
+        print('Tiempo de Ejecucion: ',totaltime)
+        print(' * Proceso Finalizado...')
+        return(answer)
+
+    # Eliminacion "Manual" de la Red de Mininet
+    os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+    return(True)
+
 
 @app.route('/',methods=['GET'])
 def get():
@@ -95,56 +164,15 @@ def executor():
         act = json_data['action']
 
         if act == "stop":
-            print(' * Borrando Hosts...')
-            for h in host_added:
-                h.stop(deleteIntfs=True)
-                net.delHost(h)
-                
-            print(' * Borrando Switchs...')
-            for s in switch_added:
-                s.stop(deleteIntfs=True)
-                net.delSwitch(s)
-            print(' * Borrando Controladores...')
-            for c in controller_added:
-                net.delController(c)
-
+            print(" * Terminando Emulacion...")
             
-            print(" * Terminando Emulacion ...")
-            for lk in linkeados:
-                try:
-                    net.delLink(lk)
-                except:
-                    print(' * Error: ', sys.exc_info()[0])
-                    answer = {}
-                    answer['Error'] = 'Failed to Delete Links'
-                    print(' * Proceso Finalizado...')
-                    return(answer)
-            try:
-                net.stop()
-            except:
-                print(' * Error: ', sys.exc_info()[0])
-                answer = {}
-                answer['Error'] = 'Failed to Stop Mininet'
-                tend = time.time()
-                totaltime = tend - tstart
-                print('Tiempo de Ejecucion: ',totaltime)
-                print(' * Proceso Finalizado...')
-                return(answer)
-
-            # Eliminacion "Manual" de la Red de Mininet
-            os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
-
+            stopEmulation()           
             ans = {}
             ans['emulacion'] = 'terminada'
             f = json.dumps(ans)
             serversEnabled = False
             reset_variables()
-            print(' * Emulación Terminada')
+            print(' * Emulación Terminada con Éxito')
 
         return ans
     
@@ -225,21 +253,21 @@ def executor():
                     'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
                 link_array.append(aux)
 
-            print(' * Creacion de la Red ...')
+            print(' * Creación de la Red...')
 
             for b in host_container:
                 host_added.append(net.addHost(b))
-            print(' * Hosts Creados ...')
+            print(' * Hosts Creados...')
 
             for d in switch_container:
                 switch_added.append(net.addSwitch(d))
-            print(' * Switchs Creados ...')
+            print(' * Switchs Creados...')
 
             for f in controller_container:
                 # controller_added.append(net.addController(
                 #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
                 controller_added.append(net.addController(f))
-            print(' * Controladores Creados ...')
+            print(' * Controladores Creados...')
 
             for n in link_array:
                 l = n['cn'].split(",")
@@ -249,13 +277,16 @@ def executor():
                             if l[1] == j.name:
                                 linkeados.append(net.addLink(
                                     m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
-            print(' * Links Creados ...')
+            print(' * Links Creados...')
+
+            print(' * Iniciando la Red...')
+            net.build()
             
-            print(' * Iniciando Controladores')
+            print(' * Iniciando Controladores...')
             for c in controller_added:
                 c.start()
             
-            print(' * Cargando Controladores a los Switchs ')
+            print(' * Cargando Controladores a los Switchs... ')
             controller_switch = json_data['controller_switch']
 
             for a in controller_switch:
@@ -267,9 +298,7 @@ def executor():
                             if(str(s) == str(switch_to_load)):
                                 s.start([c])
 
-
-            net.start()
-            print(' * Red Emulada con Éxito ...')
+            print(' * Red Emulada con Éxito')
 
             at = {}
             at['red'] = 'creada'
@@ -278,8 +307,10 @@ def executor():
             print(' * Error: ', sys.exc_info()[0])
             answer = {}
             answer['Error'] = 'Failed to Generate Network'
+            print(' * Deteniendo Emulación ...')
+            stopEmulation()
             tend = time.time()
-            print(' * Proceso Finalizado...')
+            print(' * Proceso Finalizado')
             return(answer)
 
 # Comprueba el limite de memoria en la maquina huesped
@@ -294,7 +325,7 @@ def machine_condition_checker():
 #  Devuelve las variables a su estado inicial
 def reset_variables():
     global host_group, swithc_group,controller_group,link_group,port_group,host_container,switch_container,controller_container,link_container,link_array,link_dict,port_container,linkeados,host_added,switch_added,controller_added,aux_array, aux, serversEnabled,name_files,name_files_server,hots_receiver,host_sender, net
-    
+
     host_group = []
     swithc_group = []
     controller_group = []
