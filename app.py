@@ -67,76 +67,6 @@ def wireshark_launcher():
 # Creacion del hilo para lanzar Wireshark
 w = threading.Thread(target=wireshark_launcher,)
 
-def stopEmulation():
-    global net,host_added,switch_added,controller_added,linkeados,tstart
-    print(" * Borrando Enlaces...")
-    for lk in linkeados:
-        try:
-            net.delLink(lk)
-        except:
-            print(' * Error: ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Delete Links'
-            print(' * Proceso Finalizado...')
-            return(answer)
-
-    print(' * Borrando Hosts...')
-    for h in host_added:
-        try:
-            h.stop(deleteIntfs=True)
-            net.delHost(h)
-        except:
-            print(' * Error: ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Delete Hosts'
-            print(' * Proceso Finalizado...')
-            return(answer)
-
-    print(' * Borrando Switchs...')
-    for s in switch_added:
-        try:
-            s.stop(deleteIntfs=True)
-            net.delSwitch(s)
-        except:
-            print(' * Error: ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Delete Switchs'
-            print(' * Proceso Finalizado...')
-            return(answer)
-            
-    print(' * Borrando Controladores...')
-    for c in controller_added:
-        try:
-            net.delController(c)
-        except:
-            print(' * Error: ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Delete Controllers'
-            print(' * Proceso Finalizado...')
-            return(answer)
-    print(' * Iniciando Secuencia de Parada de la Red en Mininet...')
-    try:
-        net.stop()
-    except:
-        print(' * Error: ', sys.exc_info()[0])
-        answer = {}
-        answer['Error'] = 'Failed to Stop Mininet'
-        tend = time.time()
-        totaltime = tend - tstart
-        print('Tiempo de Ejecucion: ',totaltime)
-        print(' * Proceso Finalizado...')
-        return(answer)
-
-    # Eliminacion "Manual" de la Red de Mininet
-    os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
-    return(True)
-
-
 @app.route('/',methods=['GET'])
 def get():
     return 'Este es el Sevidor Mininet by Atlas'
@@ -350,6 +280,79 @@ def reset_variables():
     hots_receiver = None
     host_sender = None
     net = Mininet(build=False)
+
+def stopEmulation():
+    global net,host_added,switch_added,controller_added,linkeados,tstart
+    if(len(linkeados) > 0):
+        print(" * Borrando Enlaces...")
+        for lk in linkeados:
+            try:
+                net.delLink(lk)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Delete Links'
+                print(' * Proceso Finalizado...')
+                return(answer)
+    if(len(host_added) > 0):
+        print(' * Borrando Hosts...')
+        for h in host_added:
+            try:
+                h.stop(deleteIntfs=True)
+                net.delHost(h)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Delete Hosts'
+                print(' * Proceso Finalizado...')
+                return(answer)
+
+    if(len(switch_added) > 0):
+        print(' * Borrando Switchs...')
+        for s in switch_added:
+            try:
+                s.stop(deleteIntfs=True)
+                net.delSwitch(s)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Delete Switchs'
+                print(' * Proceso Finalizado...')
+                return(answer)
+            
+    if(len(controller_added) > 0):
+        print(' * Borrando Controladores...')
+        for c in controller_added:
+            try:
+                net.delController(c)
+            except:
+                print(' * Error: ', sys.exc_info()[0])
+                answer = {}
+                answer['Error'] = 'Failed to Delete Controllers'
+                print(' * Proceso Finalizado...')
+                return(answer)
+                
+    print(' * Iniciando Secuencia de Parada de la Red en Mininet...')
+    try:
+        net.stop()
+    except:
+        print(' * Error: ', sys.exc_info()[0])
+        answer = {}
+        answer['Error'] = 'Failed to Stop Mininet'
+        tend = time.time()
+        totaltime = tend - tstart
+        print('Tiempo de Ejecucion: ',totaltime)
+        print(' * Proceso Finalizado...')
+        return(answer)
+
+    # Eliminacion "Manual" de la Red de Mininet
+    os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
+    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+    return(True)
 
 # Reinicia el Tráfico en un host cliente y un host servidor en particular
 def reset_traffic(host_client, host_server, port):
