@@ -74,7 +74,7 @@ def get():
 
 @app.route('/',methods=['POST'])
 def executor():
-    global serversEnabled, aux_array, name_files, name_files_server, aux, json_data, tstart, linkeados, net
+    global serversEnabled, aux_array, name_files, name_files_server, aux, json_data, tstart, linkeados, net, host_added, switch_added,controller_added
     print('\n * Hora ',time.localtime().tm_hour,':',time.localtime().tm_min,':',time.localtime().tm_sec)
     tstart = time.time()
     content = request.json
@@ -95,7 +95,20 @@ def executor():
         act = json_data['action']
 
         if act == "stop":
+            print(' * Borrando Hosts...')
+            for h in host_added:
+                h.stop(deleteIntfs=True)
+                net.delHost(h)
+                
+            print(' * Borrando Switchs...')
+            for s in switch_added:
+                s.stop(deleteIntfs=True)
+                net.delSwitch(s)
+            print(' * Borrando Controladores...')
+            for c in controller_added:
+                net.delController(c)
 
+            
             print(" * Terminando Emulacion ...")
             for lk in linkeados:
                 try:
@@ -237,6 +250,23 @@ def executor():
                                 linkeados.append(net.addLink(
                                     m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
             print(' * Links Creados ...')
+            
+            print(' * Iniciando Controladores')
+            for c in controller_added:
+                c.start()
+            
+            print(' * Cargando Controladores a los Switchs ')
+            controller_switch = json_data['controller_switch']
+
+            for a in controller_switch:
+                controller_to_load = controller_switch[a]
+                switch_to_load = a
+                for c in controller_added:
+                    if(str(c) == str(controller_to_load)):
+                        for s in switch_added:
+                            if(str(s) == str(switch_to_load)):
+                                s.start([c])
+
 
             net.start()
             print(' * Red Emulada con Éxito ...')
@@ -263,6 +293,8 @@ def machine_condition_checker():
 
 #  Devuelve las variables a su estado inicial
 def reset_variables():
+    global host_group, swithc_group,controller_group,link_group,port_group,host_container,switch_container,controller_container,link_container,link_array,link_dict,port_container,linkeados,host_added,switch_added,controller_added,aux_array, aux, serversEnabled,name_files,name_files_server,hots_receiver,host_sender, net
+    
     host_group = []
     swithc_group = []
     controller_group = []
@@ -332,6 +364,10 @@ def traffic_executor_tcp():
     
     if('global' in json_data):
         print(' * TCP - Global Mode')
+        if 'all_for_all' in json_data:
+            print(' * All for All Mode')
+        elif 'one_for_all' in json_data:
+            print(' * One for All Mode')
         #Lista de Puertos
         for pt in range(host_size):
             initial_port = initial_port + 1
@@ -418,11 +454,9 @@ def traffic_executor_tcp():
 
                                     # Crea la orden Completa dependiendo de que modo tenga One for All o ALl for All
                                     if 'all_for_all' in json_data:
-                                        print(' * All for All Mode')
                                         #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que se ejecute en segundo Plano con el '&'
                                         orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'+' &'
                                     elif 'one_for_all' in json_data:
-                                        print(' * One for All Mode')
                                         #  Agregamos la condicion de que la respuesta la entregue en un archivo Json y que espera a terminar el proceso ya q no se envia a segundo plano
                                         orden = orden+'-J>'+str(host_client)+'_'+str(server[0])+'.json'
                                     #  Se Carga la orden al host Cliente
@@ -589,7 +623,7 @@ def traffic_executor_tcp():
         list_validation.append(element_to_validate)
 
     # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
-    #  Esta sección  comprueba y carga la respuesta de Iperf3
+    #  Esta sección  comprueba y carga la respuesta de Iperf3                                                                              *-
     # -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 
     time.sleep(1);
