@@ -22,28 +22,31 @@ app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}}) # Acepta dede todas las direcciones con el *
 
 # Create a variable for the elements of topology
+# Estas variables tienen los arreglos de cada elemento de red en cada item
 host_group = []
-swithc_group = []
+switch_group = []
 controller_group = []
 link_group = []
 port_group = []
 
+# Estas variables solo contienen los nombres de los elementos
 host_container = []
 switch_container = []
 controller_container = []
 link_container = []
+
 link_array = []
 link_dict = {}
 port_container = []
 
 tstart = None
 
-
+# Estas variables contienen los elementos de red de Mininet 
 linkeados = []
-
 host_added = []
 switch_added = []
 controller_added = []
+
 aux_array = []
 aux = []
 
@@ -150,83 +153,217 @@ def executor():
             array_data = content['items']
             ipClient = content['IpClient']
             aux = ""
+            
             for ip in ipClient:
                 ip_sh = ip[0]
                 aux = aux+ip
             # Establece en el Bash la direccion del cliente  en el DISPPLAY
             os.environ["DISPLAY"] = aux+':0.0'
             # w.start()
-            for x in array_data:
-                id = x['id'][0]
-                if id == 'h':
-                    host_group.append(x)
-                elif id == 's':
-                    swithc_group.append(x)
-                elif id == 'c':
-                    controller_group.append(x)
-                elif id == 'l':
-                    link_group.append(x)
-                elif id == 'e':
-                    port_group.append(x)
-                else:
-                    print("None")
+            print(' * Agregando Elementos de Red...')
+            for element in array_data:
+                element_configuration = {}
+                identifier = element['id'][0]
+                # Si el elemento es un Controlador
+                if identifier == 'c':
+                    identify = element['id']
+                    cntlr = net.addController(identify)
+                    if 'type' in element:
+                        if element['type'] == 'OpenFlow Reference Implementation':
+                            cntlr.controller = mininet.node.Controller
+                        if element['type'] == 'NOX':
+                            cntlr.controller=mininet.node.NOX
+                        if element['type'] == 'OVS':
+                            cntlr.controller=mininet.node.OVS
+                        if element['type'] == 'OpenDayLigth':
+                            pass
+                    if 'ipController' in element:
+                        cntlr.ip = element['ipController']
+                    if 'port' in element:
+                        cntlr.port = element['port']
+                    if 'protocol' in element:
+                        cntlr.protocol = element['protocol']
+                    controller_added.append(cntlr)
+                # Si el elemento es un Switch
+                if identifier == 's':
+                    identify = element['id']
+                    switch = net.addSwitch(identify)
+                    if 'ipSwitch' in element:
+                        switch.ip = element['ipSwitch']
+                    if 'verbose' in element:
+                        switch.verbose = element['verbose']
+                    if 'batch' in element:
+                        switch.batch = True
+                    if 'inNameSpace' in element:
+                        switch.inNamespace = True
+                    if 'inBand' in element:
+                        switch.inband = True
+                    if 'failMode' in element:
+                        switch.failMode = element['failMode']
+                    if 'reconnectedSwitch' in element:
+                        switch.reconnectms = element['reconnectedSwitch']
+                    if 'dataPath' in element:
+                        switch.dataPath = element['dataPath']
+                    if 'dataPathId' in element:
+                        switch.dpid = element['dataPathId']
+                    if 'dataPathOpt' in element:
+                        switch.dpopts = element['dataPathOpt']
+                    if 'protocol' in element:
+                        switch.protocol = element['protocol']
+                    if 'dpctlPort' in element:
+                        switch.listenPort = element['dpctlPort']
+                    if 'stp' in element:
+                        switch.stp = True
+                    if 'stpPriority' in element:
+                        switch.prio = element['stpPriority']
+                    if 'type' in element:
+                        if element['type']  == 'IVS Switch':
+                            cls=mininet.node.IVSSwitch
+                        if element['type']  == 'Linux Bridge':
+                            switch.cls = mininet.node.LinuxBridge
+                        if element['type']  == 'OVS Brigde':
+                            cls=mininet.node.OVSBridge
+                        if element['type']  == 'OVS Switch':
+                            cls=mininet.node.OVSSwitch
+                        if element['type']  == 'User Switch':
+                            cls=mininet.node.UserSwitch
 
-            for x in host_group:
-                host_container.append(x['id'])
-            for y in swithc_group:
-                switch_container.append(y['id'])
-            for z in controller_group:
-                controller_container.append(z['id'])
-            for cn in link_group:
-                link_container.append(cn['connection'])
-                aux = {
-                    'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
-                link_array.append(aux)
-
-            print(' * Creación de la Red...')
-
-            for b in host_container:
-                host_added.append(net.addHost(b))
-            print(' * Hosts Creados...')
-
-            for d in switch_container:
-                switch_added.append(net.addSwitch(d))
-            print(' * Switchs Creados...')
-
-            for f in controller_container:
-                # controller_added.append(net.addController(
-                #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
-                controller_added.append(net.addController(f))
-            print(' * Controladores Creados...')
-
-            for n in link_array:
-                l = n['cn'].split(",")
-                for m in switch_added:
-                    if l[0] == m.name:
-                        for j in host_added:
-                            if l[1] == j.name:
-                                linkeados.append(net.addLink(
-                                    m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
-            print(' * Links Creados...')
-
-            print(' * Iniciando la Red...')
-            net.build()
+                    switch_added.append(switch)
+                # Si el elemento es un Host
+                if identifier == 'h':
+                    identify = element['id']
+                    host = net.addHost(identify)
+                    host.ip = None
+                    
+                    if 'ipHost' in element:
+                        host.defaultRoute = 'via '+str(element['ipHost'])
+                    if 'sheduler' in element:
+                        host.cls = mininet.node.CPULimitedHost
+                        host.setCPUFrac().sched = element['sheduler']
+                    if 'cpuLimit' in element:
+                        host.cls = mininet.node.CPULimitedHost
+                        host.setCPUFrac().f = element['cpuLimit']
+                    if 'cpuCore' in element:
+                        host.cls = mininet.node.CPULimitedHost
+                        host.setCPUs(cores = element['cpuCore'])
+                    
+                    host_added.append(host)
+                # Si el elemento es un Enlace
+                if identifier == 'l':
+                    cn = element['connection']
+                    interface1 = element['intfName1']
+                    interface2 = element['intfName2']
+                    el_cn = cn.split(',')
+                    # Si el enlace inicia en un Switch
+                    if el_cn[0][0] == 's':
+                        for s in switch_added:
+                            if s.name == el_cn[0]:
+                                for h in host_added:
+                                    if h.name == el_cn[1]:
+                                        link = net.addLink(h,s,intfName1 = interface1, intfName2 = interface2)
+                                        linkeados.append(link)
+                    # Si el enlace inicia en un Host
+                    elif el_cn[0][0] == 'h':
+                        for h in host_added:
+                            if h.name == el_cn[0]:
+                                for s in switch_added:
+                                    if s.name == el_cn[1]:
+                                        link = net.addLink(h,s,intfName1 = interface1, intfName2 = interface2)
+                                        linkeados.append(link)
             
+            print(' * Construyendo la Red...')
+            net.build()
+
             print(' * Iniciando Controladores...')
             for c in controller_added:
                 c.start()
             
-            print(' * Cargando Controladores a los Switchs... ')
-            controller_switch = json_data['controller_switch']
-
-            for a in controller_switch:
-                controller_to_load = controller_switch[a]
-                switch_to_load = a
-                for c in controller_added:
-                    if(str(c) == str(controller_to_load)):
-                        for s in switch_added:
-                            if(str(s) == str(switch_to_load)):
+            print(' * Iniciando Switchs...')
+            for element in array_data:
+                for s in switch_added:
+                    if element['id'] == s.name: 
+                        for c in controller_added:
+                            if element['controller'] == c.name:
                                 s.start([c])
+            
+            # for x in array_data:
+            #     id = x['id'][0]
+            #     if id == 'h':
+            #         host_group.append(x)
+            #     elif id == 's':
+            #         switch_group.append(x)
+            #     elif id == 'c':
+            #         controller_group.append(x)
+            #     elif id == 'l':
+            #         link_group.append(x)
+            #     elif id == 'e':
+            #         port_group.append(x)
+            #     else:
+            #         print("None")
+            
+            # for x in host_group:
+            #     host_container.append(x['id'])
+            # for y in switch_group:
+            #     switch_container.append(y['id'])
+            # for z in controller_group:
+            #     controller_container.append(z['id'])
+            # for cn in link_group:
+            #     link_container.append(cn['connection'])
+            #     aux = {
+            #         'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
+            #     link_array.append(aux)
+
+            # print(' * Creación de la Red...')
+            
+            # # Añdadiendo a Mininet cada Elemento de Red 
+            # # Elementos Host
+            # for b in host_container:
+            #     host_added.append(net.addHost(b))
+            # print(' * Hosts Creados...')
+            
+            # # Elementos Switchs
+            # for d in switch_container:
+            #     switch_added.append(net.addSwitch(d))
+            # print(' * Switchs Creados...')
+
+            # # Elementos Controladores
+            # for f in controller_container:
+            #     # controller_added.append(net.addController(
+            #     #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
+            #     controller_added.append(net.addController(f))
+            # print(' * Controladores Creados...')
+
+            # # Enlaces de la Red
+            # for n in link_array:
+            #     l = n['cn'].split(",")
+            #     for m in switch_added:
+            #         if l[0] == m.name:
+            #             for j in host_added:
+            #                 if l[1] == j.name:
+            #                     linkeados.append(net.addLink(
+            #                         m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
+            # print(' * Links Creados...')
+
+            # print(' * Iniciando la Red...')
+            # net.build()
+            
+            # print(' * Iniciando Controladores...')
+            # for c in controller_added:
+            #     c.start()
+            
+            # print(' * Cargando Controladores a los Switchs... ')
+            # controller_switch = json_data['controller_switch']
+            
+            
+
+            # for a in controller_switch:
+            #     controller_to_load = controller_switch[a]
+            #     switch_to_load = a
+            #     for c in controller_added:
+            #         if(str(c) == str(controller_to_load)):
+            #             for s in switch_added:
+            #                 if(str(s) == str(switch_to_load)):
+            #                     s.start([c])
 
             print(' * Red Emulada con Éxito')
 
@@ -254,10 +391,10 @@ def machine_condition_checker():
 
 #  Devuelve las variables a su estado inicial
 def reset_variables():
-    global host_group, swithc_group,controller_group,link_group,port_group,host_container,switch_container,controller_container,link_container,link_array,link_dict,port_container,linkeados,host_added,switch_added,controller_added,aux_array, aux, serversEnabled,name_files,name_files_server,hots_receiver,host_sender, net
+    global host_group, switch_group,controller_group,link_group,port_group,host_container,switch_container,controller_container,link_container,link_array,link_dict,port_container,linkeados,host_added,switch_added,controller_added,aux_array, aux, serversEnabled,name_files,name_files_server,hots_receiver,host_sender, net
 
     host_group = []
-    swithc_group = []
+    switch_group = []
     controller_group = []
     link_group = []
     port_group = []
