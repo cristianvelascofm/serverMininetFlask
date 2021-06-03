@@ -270,7 +270,17 @@ def executor():
                                     if s.name == el_cn[1]:
                                         link = net.addLink(h,s,intfName1 = interface1, intfName2 = interface2)
                                         linkeados.append(link)
-            
+                # Si el elemento es una Intefaz
+                if identifier == 'e':
+                    pt = element['intf']
+                    element_network = pt.split('-')[0]
+                    name_interface = pt.split('-')[1]
+                    for h in host_added:
+                        if element_network == h.name:
+                            h.intf(str(element['intf']))
+
+
+
             print(' * Construyendo la Red...')
             net.build()
 
