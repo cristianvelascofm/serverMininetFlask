@@ -275,10 +275,16 @@ def executor():
                     pt = element['intf']
                     element_network = pt.split('-')[0]
                     name_interface = pt.split('-')[1]
-                    for h in host_added:
-                        if element_network == h.name:
-                            h.intf(str(element['intf']))
-
+                    if element_network[0] == 'h':
+                        for h in host_added:
+                            if element_network == h.name:
+                                print('entre Host')
+                                h.intf(str(element['intf']))
+                    elif element_network[0] == 's':
+                        for s in switch_added:
+                            if element_network == s.name:
+                                print('entre Switch')
+                                s.intf(str(element['intf']))
 
 
             print(' * Construyendo la Red...')
