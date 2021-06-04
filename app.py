@@ -147,7 +147,7 @@ def executor():
             return(answer)
     else:
         # Creación y Montaje de la Red en Mininet
-        try:
+        
             print(' * Creando el Arreglo de la Red ...')
             # Contiene el diccionario de la clave Items
             array_data = content['items']
@@ -157,9 +157,13 @@ def executor():
             for ip in ipClient:
                 ip_sh = ip[0]
                 aux = aux+ip
-            # Establece en el Bash la direccion del cliente  en el DISPPLAY
-            os.environ["DISPLAY"] = aux+':0.0'
-            # w.start()
+            
+            # Si existe Direccion Ip se activa wireshark
+            if(aux != ''):
+                # Establece en el Bash la direccion del cliente  en el DISPPLAY
+                os.environ["DISPLAY"] = aux+':0.0'
+                # w.start() 
+
             print(' * Agregando Elementos de Red...')
             for element in array_data:
                 element_configuration = {}
@@ -233,7 +237,7 @@ def executor():
                 if identifier == 'h':
                     identify = element['id']
                     host = net.addHost(identify)
-                    host.ip = None
+                    # host.ip = None
                     
                     if 'ipHost' in element:
                         host.defaultRoute = 'via '+str(element['ipHost'])
@@ -248,6 +252,10 @@ def executor():
                         host.setCPUs(cores = element['cpuCore'])
                     
                     host_added.append(host)
+            
+            print(' * Agregando Enlaces')
+            for element in array_data:
+                identifier = element['id'][0]
                 # Si el elemento es un Enlace
                 if identifier == 'l':
                     cn = element['connection']
@@ -256,11 +264,12 @@ def executor():
                     el_cn = cn.split(',')
                     # Si el enlace inicia en un Switch
                     if el_cn[0][0] == 's':
+                        
                         for s in switch_added:
                             if s.name == el_cn[0]:
                                 for h in host_added:
                                     if h.name == el_cn[1]:
-                                        link = net.addLink(h,s,intfName1 = interface1, intfName2 = interface2)
+                                        link = net.addLink(s,h, intfName1 = interface1, intfName2 = interface2)
                                         linkeados.append(link)
                     # Si el enlace inicia en un Host
                     elif el_cn[0][0] == 'h':
@@ -268,25 +277,29 @@ def executor():
                             if h.name == el_cn[0]:
                                 for s in switch_added:
                                     if s.name == el_cn[1]:
-                                        link = net.addLink(h,s,intfName1 = interface1, intfName2 = interface2)
+                                        link = net.addLink(s,h, intfName1 = interface1, intfName2 = interface2)
                                         linkeados.append(link)
+
+            print(' * Configurando Interfaces...')
+            for element in array_data:
+                identifier = element['id'][0]
                 # Si el elemento es una Intefaz
                 if identifier == 'e':
-                    pt = element['intf']
-                    element_network = pt.split('-')[0]
-                    name_interface = pt.split('-')[1]
-                    if element_network[0] == 'h':
-                        for h in host_added:
-                            if element_network == h.name:
-                                print('entre Host')
-                                h.intf(str(element['intf']))
-                    elif element_network[0] == 's':
-                        for s in switch_added:
-                            if element_network == s.name:
-                                print('entre Switch')
-                                s.intf(str(element['intf']))
-
-
+                    if 'ipPort' in element:
+                        pt = element['intf']
+                        element_network = pt.split('-')[0]
+                        name_interface = pt.split('-')[1]
+                        if str(element_network[0]) == 'h':
+                            for h in host_added:
+                                if element_network == h.name:
+                                    interface = str(element['intf'])
+                                    h.setIP(str(element['ipPort']), intf= interface, prefixLen= 8)
+                        elif str(element_network[0]) == 's':
+                            for s in switch_added:
+                                if element_network == s.name:
+                                    interface = str(element['intf'])
+                                    s.setIP(str(element['ipPort']), intf= interface, prefixLen= 8)
+                    
             print(' * Construyendo la Red...')
             net.build()
 
@@ -302,99 +315,14 @@ def executor():
                             if element['controller'] == c.name:
                                 s.start([c])
             
-            # for x in array_data:
-            #     id = x['id'][0]
-            #     if id == 'h':
-            #         host_group.append(x)
-            #     elif id == 's':
-            #         switch_group.append(x)
-            #     elif id == 'c':
-            #         controller_group.append(x)
-            #     elif id == 'l':
-            #         link_group.append(x)
-            #     elif id == 'e':
-            #         port_group.append(x)
-            #     else:
-            #         print("None")
-            
-            # for x in host_group:
-            #     host_container.append(x['id'])
-            # for y in switch_group:
-            #     switch_container.append(y['id'])
-            # for z in controller_group:
-            #     controller_container.append(z['id'])
-            # for cn in link_group:
-            #     link_container.append(cn['connection'])
-            #     aux = {
-            #         'cn': cn['connection'], 'intfName1': cn['intfName1'], 'intfName2': cn['intfName2']}
-            #     link_array.append(aux)
 
-            # print(' * Creación de la Red...')
-            
-            # # Añdadiendo a Mininet cada Elemento de Red 
-            # # Elementos Host
-            # for b in host_container:
-            #     host_added.append(net.addHost(b))
-            # print(' * Hosts Creados...')
-            
-            # # Elementos Switchs
-            # for d in switch_container:
-            #     switch_added.append(net.addSwitch(d))
-            # print(' * Switchs Creados...')
-
-            # # Elementos Controladores
-            # for f in controller_container:
-            #     # controller_added.append(net.addController(
-            #     #    name=f, controller=RemoteController, ip='10.556.150', port=6633))
-            #     controller_added.append(net.addController(f))
-            # print(' * Controladores Creados...')
-
-            # # Enlaces de la Red
-            # for n in link_array:
-            #     l = n['cn'].split(",")
-            #     for m in switch_added:
-            #         if l[0] == m.name:
-            #             for j in host_added:
-            #                 if l[1] == j.name:
-            #                     linkeados.append(net.addLink(
-            #                         m, j, intfName1=n['intfName1'], intfName2=n['intfName2']))
-            # print(' * Links Creados...')
-
-            # print(' * Iniciando la Red...')
-            # net.build()
-            
-            # print(' * Iniciando Controladores...')
-            # for c in controller_added:
-            #     c.start()
-            
-            # print(' * Cargando Controladores a los Switchs... ')
-            # controller_switch = json_data['controller_switch']
-            
-            
-
-            # for a in controller_switch:
-            #     controller_to_load = controller_switch[a]
-            #     switch_to_load = a
-            #     for c in controller_added:
-            #         if(str(c) == str(controller_to_load)):
-            #             for s in switch_added:
-            #                 if(str(s) == str(switch_to_load)):
-            #                     s.start([c])
 
             print(' * Red Emulada con Éxito')
 
             at = {}
             at['red'] = 'creada'
             return at
-        except:
-            print(' * Error: ', sys.exc_info()[0])
-            answer = {}
-            answer['Error'] = 'Failed to Generate Network'
-            print(' * Deteniendo Emulación ...')
-            stopEmulation()
-            tend = time.time()
-            print(' * Proceso Finalizado')
-            return(answer)
+
 
 # Comprueba el limite de memoria en la maquina huesped
 def machine_condition_checker():
