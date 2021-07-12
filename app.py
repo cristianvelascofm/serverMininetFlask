@@ -243,7 +243,8 @@ def executor():
                         host.defaultRoute = 'via '+str(element['ipHost'])
                     if 'sheduler' in element:
                         host.cls = mininet.node.CPULimitedHost
-                        host.setCPUFrac().sched = element['sheduler']
+                        host.CPULimitedHost.setCPUFrac().sched = element['sheduler']
+                        # host.setCPUFrac().sched = element['sheduler']
                     if 'cpuLimit' in element:
                         host.cls = mininet.node.CPULimitedHost
                         host.setCPUFrac().f = element['cpuLimit']
