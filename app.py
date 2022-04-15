@@ -1,11 +1,14 @@
 import json
 import os
+import sched
 import socket
 import subprocess
 import sys
 import threading
 import time
 from threading import Timer
+
+from pprint import pprint
 
 import mininet.link
 import mininet.log
@@ -14,6 +17,8 @@ from flask import Flask, request
 from flask_cors import CORS
 from mininet.cli import CLI
 from mininet.net import Mininet
+from mininet.node import Node, Host, Switch, Controller
+from mininet.node import CPULimitedHost
 from mininet.node import OVSSwitch, RemoteController
 from mininet.topo import Topo
 
@@ -55,6 +60,7 @@ serversEnabled = False
 name_files = []
 name_files_server = []
 json_data = ''
+
 #Variables para la generacion de trafico ITG
 
 hots_receiver = None
@@ -72,7 +78,7 @@ w = threading.Thread(target=wireshark_launcher,)
 
 @app.route('/',methods=['GET'])
 def get():
-    return 'Este es el Sevidor Mininet by Atlas'
+    return 'Este es el Sevidor Mininet'
 
 @app.route('/',methods=['POST'])
 def executor():
@@ -184,7 +190,8 @@ def executor():
                     if 'ipController' in element:
                         cntlr.ip = element['ipController']
                     if 'port' in element:
-                        cntlr.port = element['port']
+                        cntlr.port = int(element['port'])
+                        
                     if 'protocol' in element:
                         cntlr.protocol = element['protocol']
                     controller_added.append(cntlr)
@@ -240,17 +247,21 @@ def executor():
                     # host.ip = None
                     
                     if 'ipHost' in element:
+                        
                         host.defaultRoute = 'via '+str(element['ipHost'])
                     if 'sheduler' in element:
-                        host.cls = mininet.node.CPULimitedHost
-                        host.CPULimitedHost.setCPUFrac().sched = element['sheduler']
-                        # host.setCPUFrac().sched = element['sheduler']
-                    if 'cpuLimit' in element:
-                        host.cls = mininet.node.CPULimitedHost
-                        host.setCPUFrac().f = element['cpuLimit']
+                        pass
+                        # host.setCPUFrac(sched=element['sheduler'].lower, f = float(element['cpuLimit']))
+                        # host.cpu = element['sheduler']
+                        # host.cls = mininet.node.CPULimitedHost
+                         #host.CPULimitedHost.setCPUFrac().sched = element['sheduler']
+                        # host.CPULimitedHost.setCPUFrac().f = element['cpuLimit']
+                    # if 'cpuLimit' in element:
+                    #    host.cls = mininet.node.CPULimitedHost
+                    #    host.setCPUFrac().f = element['cpuLimit']
                     if 'cpuCore' in element:
                         host.cls = mininet.node.CPULimitedHost
-                        host.setCPUs(cores = element['cpuCore'])
+                        host.setCPUs(cores = int(element['cpuCore']))
                     
                     host_added.append(host)
             
@@ -265,12 +276,15 @@ def executor():
                     el_cn = cn.split(',')
                     # Si el enlace inicia en un Switch
                     if el_cn[0][0] == 's':
-                        
                         for s in switch_added:
                             if s.name == el_cn[0]:
                                 for h in host_added:
                                     if h.name == el_cn[1]:
                                         link = net.addLink(s,h, intfName1 = interface1, intfName2 = interface2)
+                                        linkeados.append(link)
+                                for sa in switch_added:
+                                    if sa.name == el_cn[1]:
+                                        link = net.addLink(s,sa,intfName1 = interface1, intfName2 = interface2)
                                         linkeados.append(link)
                     # Si el enlace inicia en un Host
                     elif el_cn[0][0] == 'h':
@@ -316,10 +330,15 @@ def executor():
                             if element['controller'] == c.name:
                                 s.start([c])
             
-
+            
 
             print(' * Red Emulada con Éxito')
-
+            pprint(vars(host_added[0]))
+            host_added[0].params['ip'] = '10.0.5.5/8'
+            print(' * Red Emulada con Éxito000000000000000')
+            pprint(vars(host_added[0]))
+            print(' * ', host_added[0].IP())
+            print('IP sw: ', host_added[0].cmd('ifconfig -a'))
             at = {}
             at['red'] = 'creada'
             return at
@@ -429,12 +448,18 @@ def stopEmulation():
         return(answer)
 
     # Eliminacion "Manual" de la Red de Mininet
-    os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
-    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$','mn -c'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f  "sudo mnexec"'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f mininet'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f Tunel=Ethernet'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 -f .ssh/mn'))
+    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f ~/.ssh/mn/*'))
+    os.system('echo %s|sudo -S %s' % ('123','mn -c'))
+    os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 -f  "sudo mnexec"'))
+    os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 -f mininet'))
+    os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 -f Tunel=Ethernet'))
+    os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 -f .ssh/mn'))
+    os.system('echo %s|sudo -S %s' % ('123', 'rm -f ~/.ssh/mn/*'))
     reset_variables()
     return(True)
 
@@ -495,7 +520,8 @@ def traffic_executor_tcp():
         if(serversEnabled == True):
             try:
                 print(' * Reiniciando el Servicio iperf3...')
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 iperf3'))
 
                 if machine_condition_checker() == True:
                     print(' * Error: Límite de Memoria Alcanzado')
@@ -543,7 +569,8 @@ def traffic_executor_tcp():
                     totaltime = tend - tstart
                     print(' * Tiempo de Ejecución: ',totaltime)
                     print(' * Proceso Finalizado...')
-                    os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+                    #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+                    os.system('echo %s|sudo -S %s' % ('123', 'rm -f *.json'))
                     return answer
 
         serversEnabled = True
@@ -608,7 +635,8 @@ def traffic_executor_tcp():
             totaltime = tend - tstart
             print(' * Tiempo de Ejecución: ',totaltime)
             print(' * Proceso Finalizado...')
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+            #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+            os.system('echo %s|sudo -S %s' % ('123', 'rm -f *.json'))
             return answer
     elif('specific' in json_data):
         print(' * TCP - Specific Mode')
@@ -616,7 +644,9 @@ def traffic_executor_tcp():
         if(serversEnabled == True):
             try:
                 print(' * Reiniciando el Servicio iperf3...')
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 iperf3'))
+
 
                 if machine_condition_checker() == True:
                     print(' * Error: Límite de Memoria Alcanzado')
@@ -679,7 +709,8 @@ def traffic_executor_tcp():
         if(serversEnabled == True):
             try:
                 print(' * Reiniciando el Servicio iperf3...')
-                os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'pkill -9 iperf3'))
+                os.system('echo %s|sudo -S %s' % ('123', 'pkill -9 iperf3'))
                 if machine_condition_checker() == True:
                     print(' * Error: Límite de Memoria Alcanzado')
                     answer = {}
@@ -825,7 +856,8 @@ def traffic_executor_tcp():
             totaltime = tend - tstart
             print(' * Tiempo de Ejecución: ',totaltime)
             print(' * Proceso Finalizado...')
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+            #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -f *.json'))
+            os.system('echo %s|sudo -S %s' % ('123', 'rm -f *.json'))
             return(answer)
             break
     
@@ -870,7 +902,8 @@ def traffic_executor_tcp():
         try: 
             archive_json = json.loads(open(str(name)+'.json').read())
             dict_data_traffic[str(name)] = archive_json
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name)+'.json'))
+            os.system('echo %s|sudo -S %s' % ('123', 'rm -r '+str(name)+'.json'))
             if machine_condition_checker() == True:
                 print(' * Error: Límite de Memoria Alcanzado')
                 answer = {}
@@ -896,7 +929,8 @@ def traffic_executor_tcp():
         try:
             archive_json_server = json.loads(open(str(name_server)+'.json').read())                    
             dict_data_traffic_server[str(name_server)] = archive_json_server
-            os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            #os.system('echo %s|sudo -S %s' % ('Okm1234$', 'rm -r '+str(name_server)+'.json'))
+            os.system('echo %s|sudo -S %s' % ('123', 'rm -r '+str(name_server)+'.json'))
             if machine_condition_checker() == True:
                 print(' * Error: Límite de Memoria Alcanzado')
                 answer = {}
@@ -1130,6 +1164,5 @@ def traffic_executor_udp():
     return 0
 
 if __name__ == '__main__':
-    app.run(debug= False, host='10.55.6.188')
-
-
+    #app.run(debug= False, host='10.55.6.188')
+    app.run(debug= False, host='192.168.56.103')
